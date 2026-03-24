@@ -133,6 +133,61 @@
     <div class="token-info" id="tokenInfo"></div>
   </div>
 
+  <!-- Reference -->
+  <div class="config" id="refPanel" style="display:none; font-size:11px; line-height:1.7;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+      <h2 style="margin:0;">API Parameter Reference</h2>
+      <button class="btn btn-secondary" style="padding:4px 12px; font-size:11px;" onclick="el('refPanel').style.display='none'">Close</button>
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+      <div>
+        <b style="color:#38bdf8;">Radio - channelWidth</b><br>
+        <code>"1"</code>=20MHz, <code>"2"</code>=Auto 20/40MHz, <code>"4"</code>=40MHz, <code>"6"</code>=80MHz/160MHz, <code>"8"</code>=160MHz (6G)
+        <br><br>
+        <b style="color:#38bdf8;">Radio - channel</b><br>
+        <code>"0"</code>=Auto<br>
+        2.4G: <code>"1","2","3"..."13"</code><br>
+        5G: <code>"36","40","44","48","149","153","157","161","165"</code> ...<br>
+        6G: <code>"1","5","9"..."233"</code>
+        <br><br>
+        <b style="color:#38bdf8;">Radio - txPower</b><br>
+        2.4G: 4~25 dBm, 5G: 4~25 dBm, 6G: 4~23 dBm<br>
+        실제 범위는 모델별 상이 (deviceMisc.minPower/maxPower 참조)
+        <br><br>
+        <b style="color:#38bdf8;">Radio - wirelessMode</b><br>
+        <code>-2</code>=Auto<br>
+        2.4G: b/g/n/ax/be mixed<br>
+        5G: a/n/ac/ax/be mixed<br>
+        6G: ax/be mixed
+      </div>
+      <div>
+        <b style="color:#38bdf8;">SSID - band (bitmask)</b><br>
+        <code>1</code>=2.4G, <code>2</code>=5G, <code>3</code>=2.4+5G, <code>4</code>=6G, <code>5</code>=2.4+6G, <code>6</code>=5+6G, <code>7</code>=All
+        <br><br>
+        <b style="color:#38bdf8;">SSID - security</b><br>
+        <code>0</code>=Open, <code>2</code>=WPA-Enterprise, <code>3</code>=WPA-Personal, <code>4</code>=PPSK w/o RADIUS, <code>5</code>=PPSK w/ RADIUS
+        <br><br>
+        <b style="color:#38bdf8;">pskSetting - versionPsk</b><br>
+        <code>1</code>=WPA-PSK, <code>2</code>=WPA2-PSK, <code>3</code>=WPA/WPA2-PSK, <code>4</code>=WPA3-SAE
+        <br><br>
+        <b style="color:#38bdf8;">pskSetting - encryptionPsk</b><br>
+        <code>1</code>=Auto, <code>3</code>=AES (WPA3-SAE는 AES 필수)
+        <br><br>
+        <b style="color:#38bdf8;">SSID - pmfMode</b><br>
+        <code>1</code>=Mandatory, <code>2</code>=Capable, <code>3</code>=Disable
+        <br><br>
+        <b style="color:#38bdf8;">SSID - deviceType</b><br>
+        <code>1</code>=EAP only, <code>2</code>=Gateway only, <code>3</code>=EAP+Gateway
+        <br><br>
+        <b style="color:#38bdf8;">Device - status</b><br>
+        <code>1</code>=Connected, <code>2</code>=Disconnected
+      </div>
+    </div>
+  </div>
+  <div style="margin-bottom:12px;">
+    <button class="btn btn-secondary" style="font-size:12px;" onclick="el('refPanel').style.display=el('refPanel').style.display==='none'?'block':'none'">Parameter Reference</button>
+  </div>
+
   <!-- Tabs -->
   <div class="tabs" id="tabs"></div>
 
