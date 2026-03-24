@@ -302,33 +302,50 @@ const APIS = [
   { tab: 'SSID', title: 'SSID / WLAN', items: [
     { id:'wlans', name:'WLAN Group List', desc:'WLAN groups (wlanId, name, primary)', m:'GET', p:'/openapi/v1/{oid}/sites/{sid}/wireless-network/wlans' },
     { id:'ssids', name:'SSID List', desc:'SSIDs in WLAN group (ssidId, name, band, security, broadcast, vlanEnable)', m:'GET', p:'/openapi/v1/{oid}/sites/{sid}/wireless-network/wlans/{wlanId}/ssids?pageSize=100&page=1' },
-    { id:'ssid-create', name:'SSID Create', desc:'Create new SSID. band: 1=2.4G, 2=5G, 3=6G | security: 0=Open, 3=WPA2-PSK, 4=WPA2/WPA3-PSK, 6=WPA3-SAE | pmfMode: 1=optional, 2=required, 3=disabled', m:'POST', p:'/openapi/v1/{oid}/sites/{sid}/wireless-network/wlans/{wlanId}/ssids',
+    { id:'ssid-detail', name:'SSID Detail', desc:'Full SSID detail (pskSetting, rateLimit, wlanSchedule, macFilter, multiCast, etc)', m:'GET', p:'/openapi/v1/{oid}/sites/{sid}/wireless-network/wlans/{wlanId}/ssids/{ssidId}',
+      params:[{k:'ssidId',l:'SSID ID',ph:'from SSID List response'}]
+    },
+    { id:'ssid-create', name:'SSID Create', desc:'band(bitmask): 1=2.4G, 2=5G, 3=2.4+5G, 4=6G, 7=all | security: 0=Open, 3=WPA-Personal | versionPsk: 1=WPA, 2=WPA2, 3=WPA/WPA2, 4=WPA3-SAE | encryptionPsk: 1=Auto, 3=AES | pmfMode: 1=Mandatory, 2=Capable, 3=Disable | deviceType: 1=EAP, 3=EAP+Gateway', m:'POST', p:'/openapi/v1/{oid}/sites/{sid}/wireless-network/wlans/{wlanId}/ssids',
       body: true, bodyDefault: JSON.stringify({
         name: "new-ssid",
-        band: 1,
+        band: 3,
         security: 3,
-        psk: "password123",
         broadcast: true,
         mloEnable: false,
-        pmfMode: 1,
+        pmfMode: 2,
+        enable11r: false,
         hidePwd: true,
         vlanEnable: false,
         guestNetEnable: false,
-        deviceType: 0,
-        enable11r: false
+        deviceType: 1,
+        pskSetting: {
+          securityKey: "password12345",
+          versionPsk: 2,
+          encryptionPsk: 1,
+          gikRekeyPskEnable: false
+        }
       }, null, 2)
     },
-    { id:'ssid-update', name:'SSID Update', desc:'Update SSID: name, security(0/3/4/6), psk, broadcast(show/hide), pmfMode, vlanEnable, vlanId, guestNetEnable', m:'PATCH', p:'/openapi/v1/{oid}/sites/{sid}/wireless-network/wlans/{wlanId}/ssids/{ssidId}/update-basic-config',
+    { id:'ssid-update', name:'SSID Update', desc:'Update SSID basic config. All * fields required. pskSetting required when security=3', m:'PATCH', p:'/openapi/v1/{oid}/sites/{sid}/wireless-network/wlans/{wlanId}/ssids/{ssidId}/update-basic-config',
       params:[{k:'ssidId',l:'SSID ID',ph:'from SSID List response'}],
       body: true, bodyDefault: JSON.stringify({
         name: "updated-ssid",
+        band: 3,
         security: 3,
-        psk: "newpassword123",
         broadcast: true,
-        pmfMode: 1,
+        mloEnable: false,
+        pmfMode: 2,
+        enable11r: false,
         hidePwd: true,
         vlanEnable: false,
-        guestNetEnable: false
+        guestNetEnable: false,
+        greEnable: false,
+        pskSetting: {
+          securityKey: "newpassword123",
+          versionPsk: 2,
+          encryptionPsk: 1,
+          gikRekeyPskEnable: false
+        }
       }, null, 2)
     },
     { id:'ssid-delete', name:'SSID Delete', desc:'Delete SSID by ssidId', m:'DELETE', p:'/openapi/v1/{oid}/sites/{sid}/wireless-network/wlans/{wlanId}/ssids/{ssidId}',
