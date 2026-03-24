@@ -403,11 +403,8 @@ const APIS = [
         }]
       }, null, 2)
     },
-    { id:'wlan-assign', name:'AP에 WLAN Group 지정 (내부API)', desc:'OpenAPI 미지원. 내부 API(/api/v2) 사용. 먼저 Access Token이 아닌 내부 로그인 필요. omadacId를 URL 앞에 붙여야 함.', m:'PATCH', p:'/{oid}/api/v2/sites/{sid}/eaps/{apMac}', useApMac:true, danger:true,
+    { id:'wlan-assign', name:'AP에 WLAN Group 지정 (내부API)', desc:'내부 로그인 → WLAN Group 지정을 한번에 실행. wlanId에 지정할 WLAN Group ID 입력.', m:'PATCH', p:'내부API', useApMac:true, danger:true, isInternal:true,
       body: true, bodyDefault: JSON.stringify({ wlanId: "" }, null, 2)
-    },
-    { id:'wlan-assign-login', name:'내부 API 로그인', desc:'내부 API 사용을 위한 세션 로그인. 응답의 token을 Csrf-Token 헤더로, 쿠키의 TPOMADA_SESSIONID를 함께 사용', m:'POST', p:'/{oid}/api/v2/login',
-      body: true, bodyDefault: JSON.stringify({ username: "admin", password: "1q2w3e!Q@W#E" }, null, 2)
     },
     { id:'ssids', name:'SSID List', desc:'SSIDs in WLAN group (ssidId, name, band, security, broadcast, vlanEnable)', m:'GET', p:'/openapi/v1/{oid}/sites/{sid}/wireless-network/wlans/{wlanId}/ssids?pageSize=100&page=1' },
     { id:'ssid-detail', name:'SSID Detail', desc:'Full SSID detail (pskSetting, rateLimit, wlanSchedule, macFilter, multiCast, etc)', m:'GET', p:'/openapi/v1/{oid}/sites/{sid}/wireless-network/wlans/{wlanId}/ssids/{ssidId}',
@@ -535,14 +532,25 @@ async function runApi(id) {
     const overrides = {};
     if (api.params) api.params.forEach(p => { const v = el(`param-${id}-${p.k}`); if (v) overrides[p.k] = v.value; });
 
-    const url = val('baseUrl') + resolvePath(api.p, overrides);
-    let reqBody = null;
-    if (api.body) {
-      const ta = el(`reqbody-${id}`);
-      if (ta && ta.value.trim()) reqBody = JSON.parse(ta.value);
+    let resp;
+    if (api.isInternal) {
+      // Internal API: login + action via /proxy-internal
+      const bodyData = {};
+      if (api.body) { const ta = el(`reqbody-${id}`); if (ta) Object.assign(bodyData, JSON.parse(ta.value)); }
+      const apMac = api.useApMac ? (el(`param-${id}-apMac`) || el('apMac')).value : '';
+      const r = await fetch('/proxy-internal', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ baseUrl: val('baseUrl'), omadacId: val('omadacId'), siteId: val('siteId'), apMac, username: val('username'), password: val('password'), wlanId: bodyData.wlanId })
+      });
+      const res = await r.json();
+      if (res.error) throw new Error(res.error);
+      resp = JSON.parse(res.body);
+    } else {
+      const url = val('baseUrl') + resolvePath(api.p, overrides);
+      let reqBody = null;
+      if (api.body) { const ta = el(`reqbody-${id}`); if (ta && ta.value.trim()) reqBody = JSON.parse(ta.value); }
+      resp = await proxy(url, api.m, authHeader(), reqBody);
     }
-
-    const resp = await proxy(url, api.m, authHeader(), reqBody);
     result.innerHTML = highlight(JSON.stringify(resp, null, 2));
   } catch (e) {
     result.textContent = `Error: ${e.message}`; result.classList.add('error');

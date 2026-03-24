@@ -1,5 +1,6 @@
 {
   "rewrites": [
-    { "source": "/proxy", "destination": "/api/proxy" }
+    { "source": "/proxy", "destination": "/api/proxy" },
+    { "source": "/proxy-internal", "destination": "/api/proxy-internal" }
   ]
 }
