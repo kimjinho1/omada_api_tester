@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Omada OpenAPI Tester</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+  .header { background: #1e293b; padding: 16px 32px; border-bottom: 1px solid #334155; display: flex; align-items: center; justify-content: space-between; }
+  .header h1 { font-size: 18px; color: #38bdf8; }
+  .header .status { font-size: 12px; padding: 5px 12px; border-radius: 20px; }
+  .status.connected { background: #064e3b; color: #34d399; }
+  .status.disconnected { background: #7f1d1d; color: #fca5a5; }
+  .container { max-width: 1280px; margin: 0 auto; padding: 20px; }
+
+  /* Config */
+  .config { background: #1e293b; border-radius: 10px; padding: 20px; margin-bottom: 16px; border: 1px solid #334155; }
+  .config h2 { font-size: 14px; color: #94a3b8; margin-bottom: 12px; }
+  .config-grid { display: grid; gap: 10px; }
+  .config-grid.g3 { grid-template-columns: 1fr 1fr 1fr; }
+  .config-grid.g4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+  .field label { font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase; display: block; margin-bottom: 3px; }
+  .field input, .field select { width: 100%; background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 8px 10px; color: #e2e8f0; font-size: 12px; font-family: 'Consolas', monospace; }
+  .field input:focus, .field select:focus { outline: none; border-color: #38bdf8; }
+  .field .auto-tag { font-size: 10px; color: #38bdf8; margin-left: 4px; }
+  .btn-row { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+  .btn { padding: 8px 20px; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+  .btn-primary { background: #0ea5e9; color: white; }
+  .btn-primary:hover { background: #0284c7; }
+  .btn-primary:disabled { background: #334155; color: #64748b; cursor: not-allowed; }
+  .btn-warn { background: #f59e0b; color: #0f172a; }
+  .btn-warn:hover { background: #d97706; }
+  .btn-secondary { background: #334155; color: #e2e8f0; }
+  .btn-secondary:hover { background: #475569; }
+  .token-info { margin-top: 10px; font-size: 11px; color: #64748b; font-family: 'Consolas', monospace; word-break: break-all; }
+  .token-info span { color: #34d399; }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 4px; margin-bottom: 16px; flex-wrap: wrap; }
+  .tab { padding: 8px 18px; border-radius: 8px 8px 0 0; font-size: 13px; font-weight: 600; cursor: pointer; background: #1e293b; color: #64748b; border: 1px solid #334155; border-bottom: none; }
+  .tab.active { background: #334155; color: #38bdf8; }
+
+  /* Section */
+  .section { display: none; }
+  .section.active { display: block; }
+  .section-title { font-size: 14px; font-weight: 700; color: #f8fafc; padding: 10px 0; margin-top: 8px; }
+
+  /* API Card */
+  .api-card { background: #1e293b; border-radius: 8px; border: 1px solid #334155; margin-bottom: 6px; overflow: hidden; }
+  .api-header { display: flex; align-items: center; padding: 10px 14px; cursor: pointer; gap: 10px; }
+  .method-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 3px; min-width: 50px; text-align: center; }
+  .method-badge.GET { background: #064e3b; color: #34d399; }
+  .method-badge.POST { background: #7c2d12; color: #fb923c; }
+  .method-badge.PATCH { background: #4c1d95; color: #c084fc; }
+  .api-header .name { font-size: 12px; font-weight: 600; flex: 1; }
+  .api-header .ep { font-size: 10px; color: #475569; font-family: 'Consolas', monospace; max-width: 400px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .run-btn { padding: 4px 12px; border: none; border-radius: 5px; background: #0ea5e9; color: white; font-size: 11px; font-weight: 600; cursor: pointer; min-width: 44px; }
+  .run-btn:hover { background: #0284c7; }
+  .run-btn.loading { background: #f59e0b; color: #0f172a; }
+  .run-btn.danger { background: #dc2626; }
+  .run-btn.danger:hover { background: #b91c1c; }
+  .api-body { display: none; padding: 0 14px 14px; }
+  .api-body.open { display: block; }
+  .api-body .desc { font-size: 11px; color: #94a3b8; margin-bottom: 8px; }
+  .param-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px; }
+  .param-grid.g1 { grid-template-columns: 1fr; }
+  .param-field label { font-size: 10px; color: #64748b; display: block; margin-bottom: 2px; }
+  .param-field input, .param-field select, .param-field textarea { width: 100%; background: #0f172a; border: 1px solid #334155; border-radius: 5px; padding: 6px 8px; color: #e2e8f0; font-size: 11px; font-family: 'Consolas', monospace; }
+  .param-field textarea { min-height: 200px; resize: vertical; width: 100%; }
+  .api-result { background: #0f172a; border-radius: 6px; padding: 12px; font-family: 'Consolas', monospace; font-size: 11px; white-space: pre-wrap; word-break: break-all; max-height: 350px; overflow-y: auto; line-height: 1.5; }
+  .api-result .key { color: #38bdf8; }
+  .api-result .string { color: #34d399; }
+  .api-result .number { color: #fb923c; }
+  .api-result .bool { color: #c084fc; }
+  .api-result .null { color: #64748b; }
+  .api-result.error { color: #fca5a5; }
+  .spinner { display: inline-block; width: 10px; height: 10px; border: 2px solid #64748b; border-top-color: #38bdf8; border-radius: 50%; animation: spin 0.5s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .ap-select { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+  .ap-select label { font-size: 11px; color: #94a3b8; white-space: nowrap; }
+  .ap-select select { flex: 1; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Omada OpenAPI Tester</h1>
+  <div class="status disconnected" id="connStatus">Disconnected</div>
+</div>
+
+<div class="container">
+  <!-- Connection Config -->
+  <div class="config">
+    <h2>Connection</h2>
+    <div class="config-grid g3">
+      <div class="field"><label>Controller URL</label><input id="baseUrl" value="https://192.168.1.55:8043" /></div>
+      <div class="field"><label>Username</label><input id="username" value="admin" /></div>
+      <div class="field"><label>Password</label><input id="password" type="password" value="1q2w3e!Q@W#E" /></div>
+    </div>
+    <div class="config-grid g3" style="margin-top:8px;">
+      <div class="field"><label>OmadacId</label><input id="omadacId" value="97312660da6d75a1d2c63b7e98f05874" /></div>
+      <div class="field"><label>Client ID</label><input id="clientId" value="8071fd8b2d804b92abb429cc87c17e5e" /></div>
+      <div class="field"><label>Client Secret</label><input id="clientSecret" value="dc9f0f6ac32d4768b536d0c923760a2d" /></div>
+    </div>
+    <div class="config-grid g4" style="margin-top:8px;">
+      <div class="field"><label>Site ID <span class="auto-tag" id="siteAutoTag">auto</span></label><input id="siteId" placeholder="auto-detected or manual" /></div>
+      <div class="field"><label>AP MAC <span class="auto-tag" id="apAutoTag">select after connect</span></label>
+        <select id="apMac"><option value="">Connect first</option></select>
+      </div>
+      <div class="field"><label>WLAN ID <span class="auto-tag">auto</span></label><input id="wlanId" placeholder="auto-detected" /></div>
+      <div class="field"><label>Site Name</label><input id="siteName" readonly placeholder="-" style="color:#64748b;" /></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="btnConnect" onclick="connect()">Access Token</button>
+      <button class="btn btn-secondary" id="btnRefresh" onclick="doRefresh()" disabled>Refresh Token</button>
+      <button class="btn btn-warn" id="btnRunAll" onclick="runAllGET()" disabled>Run All GET</button>
+    </div>
+    <div class="token-info" id="tokenInfo"></div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs" id="tabs"></div>
+
+  <!-- Sections -->
+  <div id="sections"></div>
+</div>
+
+<script>
+// ── State ──
+let S = { accessToken: null, refreshToken: null };
+
+function el(id) { return document.getElementById(id); }
+function val(id) { return el(id).value.trim(); }
+
+// ── Proxy ──
+async function proxy(url, method, headers, data) {
+  const r = await fetch('/proxy', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url, method, headers: { 'Content-Type': 'application/json', ...headers }, data }),
+  });
+  const res = await r.json();
+  if (res.error) throw new Error(res.error);
+  return JSON.parse(res.body);
+}
+
+function authHeader() { return { 'Authorization': `AccessToken=${S.accessToken}` }; }
+
+// ── Connect ──
+async function connect() {
+  const btn = el('btnConnect');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
+  try {
+    const base = val('baseUrl'), cid = val('clientId'), oid = val('omadacId'), cs = val('clientSecret');
+
+    // Step 1: Login
+    const login = await proxy(`${base}/openapi/authorize/login?client_id=${cid}&omadac_id=${oid}`, 'POST', {}, { username: val('username'), password: val('password') });
+    if (login.errorCode !== 0) throw new Error(login.msg);
+    const { csrfToken, sessionId } = login.result;
+
+    // Step 2: Code
+    const codeR = await proxy(`${base}/openapi/authorize/code?client_id=${cid}&omadac_id=${oid}&response_type=code`, 'POST', { 'Csrf-Token': csrfToken, 'Cookie': `TPOMADA_SESSIONID=${sessionId}` }, null);
+    if (codeR.errorCode !== 0) throw new Error(codeR.msg);
+
+    // Step 3: Token
+    const tokR = await proxy(`${base}/openapi/authorize/token?grant_type=authorization_code&code=${codeR.result}&client_id=${cid}&client_secret=${cs}&omadac_id=${oid}`, 'POST', {}, null);
+    if (tokR.errorCode !== 0) throw new Error(tokR.msg);
+
+    S.accessToken = tokR.result.accessToken;
+    S.refreshToken = tokR.result.refreshToken;
+
+    el('connStatus').className = 'status connected'; el('connStatus').textContent = 'Connected';
+    el('btnRefresh').disabled = false; el('btnRunAll').disabled = false;
+    el('tokenInfo').innerHTML = `AT: <span>${S.accessToken}</span> | RT: <span>${S.refreshToken}</span> | Expires: <span>${tokR.result.expiresIn}s</span>`;
+
+    await autoDetect();
+    btn.textContent = 'Reconnect';
+  } catch (e) {
+    el('tokenInfo').innerHTML = `<span style="color:#fca5a5">${e.message}</span>`;
+    el('connStatus').className = 'status disconnected'; el('connStatus').textContent = 'Error';
+  }
+  btn.disabled = false;
+}
+
+async function doRefresh() {
+  try {
+    const r = await proxy(`${val('baseUrl')}/openapi/authorize/token?grant_type=refresh_token&refresh_token=${S.refreshToken}&client_id=${val('clientId')}&client_secret=${val('clientSecret')}`, 'POST', {}, null);
+    if (r.errorCode !== 0) throw new Error(r.msg);
+    S.accessToken = r.result.accessToken; S.refreshToken = r.result.refreshToken;
+    el('tokenInfo').innerHTML = `AT: <span>${S.accessToken}</span> | RT: <span>${S.refreshToken}</span> | <span style="color:#f59e0b">Refreshed</span>`;
+  } catch (e) { el('tokenInfo').innerHTML += ` | <span style="color:#fca5a5">${e.message}</span>`; }
+}
+
+async function autoDetect() {
+  const base = val('baseUrl'), oid = val('omadacId');
+  // Sites
+  if (!val('siteId')) {
+    const sr = await proxy(`${base}/openapi/v1/${oid}/sites?pageSize=100&page=1`, 'GET', authHeader());
+    if (sr.errorCode === 0 && sr.result.data.length) {
+      el('siteId').value = sr.result.data[0].siteId;
+      el('siteName').value = sr.result.data[0].name;
+      el('siteAutoTag').textContent = 'auto-detected';
+    }
+  }
+  // Devices → AP list
+  const sid = val('siteId');
+  if (sid) {
+    const dr = await proxy(`${base}/openapi/v1/${oid}/sites/${sid}/devices?pageSize=100&page=1`, 'GET', authHeader());
+    if (dr.errorCode === 0) {
+      const sel = el('apMac'); sel.innerHTML = '';
+      const aps = dr.result.data.filter(d => d.type === 'ap');
+      aps.forEach((ap, i) => {
+        const opt = document.createElement('option');
+        opt.value = ap.mac;
+        opt.textContent = `${ap.mac} (${ap.model} / ${ap.ip} / ${ap.status === 1 ? 'Connected' : 'Disconnected'})`;
+        sel.appendChild(opt);
+      });
+      el('apAutoTag').textContent = `${aps.length} AP(s)`;
+      // wlanId from first connected AP
+      const connAp = aps.find(a => a.status === 1) || aps[0];
+      if (connAp) {
+        const ar = await proxy(`${base}/openapi/v1/${oid}/sites/${sid}/aps/${connAp.mac}`, 'GET', authHeader());
+        if (ar.errorCode === 0 && ar.result.wlanId) el('wlanId').value = ar.result.wlanId;
+      }
+    }
+  }
+}
+
+// ── API Definitions (from Excel: TPLINK-EAP783 sheet) ──
+const APIS = [
+  { tab: 'Client', title: 'Client', items: [
+    { id:'clients', name:'Client List', desc:'Connected clients (MAC, IP, SSID, RSSI, SNR, Traffic)', m:'GET', p:'/openapi/v1/{oid}/sites/{sid}/clients?pageSize=100&page=1' },
+    { id:'block', name:'Block Client', desc:'Block a client by MAC', m:'POST', p:'/openapi/v1/{oid}/sites/{sid}/clients/{clientMac}/block', params:[{k:'clientMac',l:'Client MAC',ph:'AA-BB-CC-DD-EE-FF'}], danger:true },
+    { id:'unblock', name:'Unblock Client', desc:'Unblock a blocked client', m:'POST', p:'/openapi/v1/{oid}/sites/{sid}/clients/{clientMac}/unblock', params:[{k:'clientMac',l:'Client MAC',ph:'AA-BB-CC-DD-EE-FF'}] },
+  ]},
+  { tab: 'Device', title: 'Device', items: [
+    { id:'devices', name:'Device List', desc:'All devices (MAC, Model, IP, Status, CPU, Memory, Uptime, FW)', m:'GET', p:'/openapi/v1/{oid}/sites/{sid}/devices?pageSize=100&page=1' },
+    { id:'ap-detail', name:'AP Detail', desc:'AP detail (CPU, Memory, Uptime, wlanId, FW version)', m:'GET', p:'/openapi/v1/{oid}/sites/{sid}/aps/{apMac}', useApMac:true },
+    { id:'reboot', name:'Reboot Device', desc:'Reboot a device by MAC', m:'POST', p:'/openapi/v1/{oid}/sites/{sid}/devices/{deviceMac}/reboot', params:[{k:'deviceMac',l:'Device MAC',ph:'Use AP MAC from dropdown'}], danger:true },
+  ]},
+  { tab: 'Port', title: 'Port (Wired)', items: [
+    { id:'uplink', name:'Wired Uplink', desc:'Uplink port info (rate, duplex, bytes, packets)', m:'GET', p:'/openapi/v1/{oid}/sites/{sid}/aps/{apMac}/wired-uplink', useApMac:true },
+    { id:'downlink', name:'Wired Downlink', desc:'Downlink port info', m:'GET', p:'/openapi/v1/{oid}/sites/{sid}/aps/{apMac}/wired-downlink', useApMac:true },
+  ]},
+  { tab: 'Radio', title: 'Radio (Channel / BW / TxPower / Traffic)', items: [
+    { id:'radios', name:'Radio Status', desc:'2.4G/5G/6G channel, bandwidth, txPower, traffic stats', m:'GET', p:'/openapi/v1/{oid}/sites/{sid}/aps/{apMac}/radios', useApMac:true },
+    { id:'radio-cfg', name:'Radio Config', desc:'Radio enable, channelWidth, channel, txPower, wirelessMode', m:'GET', p:'/openapi/v1/{oid}/sites/{sid}/aps/{apMac}/radio-config', useApMac:true },
+    { id:'radio-set', name:'Radio Config Set', desc:'Change radio settings (enable, channel, BW, txPower)', m:'PATCH', p:'/openapi/v1/{oid}/sites/{sid}/aps/{apMac}/radio-config', useApMac:true,
+      body: true, bodyDefault: JSON.stringify({
+        radioSetting2g: { radioEnable: true, channelWidth: "4", channel: "0", txPower: 26 },
+        radioSetting5g: { radioEnable: true, channelWidth: "6", channel: "0", txPower: 27 }
+      }, null, 2)
+    },
+  ]},
+  { tab: 'SSID', title: 'SSID / WLAN', items: [
+    { id:'ssids', name:'SSID List', desc:'SSIDs in WLAN group (name, band, security, broadcast)', m:'GET', p:'/openapi/v1/{oid}/sites/{sid}/wireless-network/wlans/{wlanId}/ssids?pageSize=100&page=1' },
+    { id:'ssid-set', name:'SSID Config Set', desc:'Change SSID name, security, password, broadcast', m:'PATCH', p:'/openapi/v1/{oid}/sites/{sid}/wireless-network/wlans/{wlanId}/ssids/{ssidId}/update-basic-config',
+      params:[{k:'ssidId',l:'SSID ID',ph:'from SSID List response'}],
+      body: true, bodyDefault: JSON.stringify({ name: "MySSID", security: 3, password: "mypassword", broadcast: true }, null, 2)
+    },
+  ]},
+  { tab: 'System', title: 'System / Beacon', items: [
+    { id:'beacon', name:'Beacon / Airtime', desc:'Beacon interval, DTIM, RTS, Fragmentation, Airtime Fairness', m:'GET', p:'/openapi/v1/{oid}/sites/{sid}/beacon-control' },
+    { id:'beacon-set', name:'Beacon Config Set', desc:'Change beacon/airtime settings (site-wide)', m:'PATCH', p:'/openapi/v1/{oid}/sites/{sid}/beacon-control',
+      body: true, bodyDefault: JSON.stringify({
+        beaconControl: { dtimPeriod2g: 1, rtsThreshold2g: 2347, fragmentationThreshold2g: 2346, dtimPeriod5g: 1, rtsThreshold5g: 2347, fragmentationThreshold5g: 2346 },
+        airtimeFairness: { enable2g: false, enable5g: false, enable6g: false }
+      }, null, 2)
+    },
+  ]},
+  { tab: 'RF Scan', title: 'RF Scan (v2 API)', items: [
+    { id:'rf-result', name:'RF Scan Result', desc:'Last RF scan result (status per band)', m:'GET', p:'/openapi/v2/{oid}/sites/{sid}/aps/{apMac}/rf-scan-result', useApMac:true },
+    { id:'rf-start', name:'RF Scan Start', desc:'Start RF scanning (may not be supported on all models)', m:'POST', p:'/openapi/v2/{oid}/sites/{sid}/aps/{apMac}/start-rf-scan', useApMac:true, danger:true },
+  ]},
+  { tab: 'ACL', title: 'ACL (Client Isolation)', items: [
+    { id:'acl-list', name:'EAP ACL List', desc:'ACL rules for client isolation', m:'GET', p:'/openapi/v1/{oid}/sites/{sid}/acls/eap-acls?pageSize=100&page=1' },
+    { id:'acl-set', name:'EAP ACL Create', desc:'Create ACL rule for client isolation', m:'POST', p:'/openapi/v1/{oid}/sites/{sid}/acls/eap-acls',
+      body: true, bodyDefault: JSON.stringify({ name: "block-rule", policy: "deny", srcIp: "0.0.0.0", dstIp: "0.0.0.0" }, null, 2)
+    },
+  ]},
+  { tab: 'Site', title: 'Site', items: [
+    { id:'sites', name:'Site List', desc:'All sites (siteId, name, region, timezone)', m:'GET', p:'/openapi/v1/{oid}/sites?pageSize=100&page=1' },
+  ]},
+];
+
+// ── Resolve path ──
+function resolvePath(p, overrides = {}) {
+  const apMac = overrides.apMac || val('apMac');
+  return p
+    .replace('{oid}', val('omadacId'))
+    .replace('{sid}', val('siteId'))
+    .replace('{apMac}', apMac)
+    .replace('{wlanId}', val('wlanId'))
+    .replace(/\{(\w+)\}/g, (_, k) => overrides[k] || `{${k}}`);
+}
+
+// ── Run single API ──
+async function runApi(id) {
+  const api = allApis().find(a => a.id === id);
+  if (!api || !S.accessToken) return;
+
+  const btn = document.querySelector(`#card-${id} .run-btn`);
+  const result = el(`result-${id}`);
+  const body = el(`body-${id}`);
+  body.classList.add('open');
+  btn.classList.add('loading'); btn.textContent = '...';
+  result.textContent = 'Loading...'; result.classList.remove('error');
+
+  try {
+    const overrides = {};
+    if (api.params) api.params.forEach(p => { const v = el(`param-${id}-${p.k}`); if (v) overrides[p.k] = v.value; });
+
+    const url = val('baseUrl') + resolvePath(api.p, overrides);
+    let reqBody = null;
+    if (api.body) {
+      const ta = el(`reqbody-${id}`);
+      if (ta && ta.value.trim()) reqBody = JSON.parse(ta.value);
+    }
+
+    const resp = await proxy(url, api.m, authHeader(), reqBody);
+    result.innerHTML = highlight(JSON.stringify(resp, null, 2));
+  } catch (e) {
+    result.textContent = `Error: ${e.message}`; result.classList.add('error');
+  }
+  btn.classList.remove('loading'); btn.textContent = 'Run';
+}
+
+async function runAllGET() {
+  const btn = el('btnRunAll');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Running...';
+  for (const api of allApis()) {
+    if (api.m === 'GET') await runApi(api.id);
+  }
+  btn.disabled = false; btn.textContent = 'Run All GET';
+}
+
+function allApis() { return APIS.flatMap(s => s.items); }
+
+// ── JSON highlight ──
+function highlight(json) {
+  return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, m => {
+    let c = 'number';
+    if (/^"/.test(m)) c = /:$/.test(m) ? 'key' : 'string';
+    else if (/true|false/.test(m)) c = 'bool';
+    else if (/null/.test(m)) c = 'null';
+    return `<span class="${c}">${m}</span>`;
+  });
+}
+
+function toggleBody(id) { el(`body-${id}`).classList.toggle('open'); }
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  document.querySelectorAll('.section').forEach(s => s.classList.toggle('active', s.dataset.tab === tab));
+}
+
+// ── Render ──
+function render() {
+  let tabsHtml = '', sectHtml = '';
+  APIS.forEach((s, i) => {
+    tabsHtml += `<div class="tab ${i===0?'active':''}" data-tab="${s.tab}" onclick="switchTab('${s.tab}')">${s.tab}</div>`;
+    sectHtml += `<div class="section ${i===0?'active':''}" data-tab="${s.tab}"><div class="section-title">${s.title}</div>`;
+    s.items.forEach(api => {
+      const isDanger = api.danger;
+      let paramsHtml = '';
+      if (api.useApMac) {
+        paramsHtml += `<div class="ap-select"><label>Target AP:</label><select id="param-${api.id}-apMac" style="flex:1;background:#0f172a;border:1px solid #334155;border-radius:5px;padding:5px 8px;color:#e2e8f0;font-size:11px;font-family:Consolas,monospace;" onchange=""></select></div>`;
+      }
+      if (api.params) {
+        paramsHtml += '<div class="param-grid">';
+        api.params.forEach(p => {
+          paramsHtml += `<div class="param-field"><label>${p.l}</label><input id="param-${api.id}-${p.k}" placeholder="${p.ph||''}" /></div>`;
+        });
+        paramsHtml += '</div>';
+      }
+      if (api.body) {
+        paramsHtml += `<div class="param-field" style="margin-bottom:8px"><label>Request Body (JSON)</label><textarea id="reqbody-${api.id}">${api.bodyDefault||'{}'}</textarea></div>`;
+      }
+
+      sectHtml += `
+        <div class="api-card" id="card-${api.id}">
+          <div class="api-header" onclick="toggleBody('${api.id}')">
+            <span class="method-badge ${api.m}">${api.m}</span>
+            <span class="name">${api.name}</span>
+            <span class="ep">${api.p}</span>
+            <button class="run-btn ${isDanger?'danger':''}" onclick="event.stopPropagation();runApi('${api.id}')">${isDanger?'Run':'Run'}</button>
+          </div>
+          <div class="api-body" id="body-${api.id}">
+            <div class="desc">${api.desc||''}</div>
+            ${paramsHtml}
+            <div class="api-result" id="result-${api.id}">Click "Run" to execute</div>
+          </div>
+        </div>`;
+    });
+    sectHtml += '</div>';
+  });
+  el('tabs').innerHTML = tabsHtml;
+  el('sections').innerHTML = sectHtml;
+}
+
+// Sync AP dropdown to per-API AP selects
+function syncApSelects() {
+  const mainSel = el('apMac');
+  document.querySelectorAll('select[id^="param-"][id$="-apMac"]').forEach(sel => {
+    sel.innerHTML = mainSel.innerHTML;
+    sel.value = mainSel.value;
+  });
+}
+
+// Watch main AP select changes
+const origAutoDetect = autoDetect;
+const _origConnect = connect;
+
+// After autoDetect, sync AP selects
+const _ad = autoDetect;
+autoDetect = async function() { await _ad(); syncApSelects(); };
+
+el('apMac').addEventListener('change', syncApSelects);
+
+render();
+</script>
+</body>
+</html>
