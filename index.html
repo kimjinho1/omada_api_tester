@@ -683,117 +683,74 @@ el('apMac').addEventListener('change', syncApSelects);
 // ── Feature Checklist (from Excel) ──
 // g=GET path, s=SET method+path, sb=SET body default, vf=verify GET path (after set)
 const P = '/openapi/v1/{oid}/sites/{sid}';
-const FEATURES = [
-  { type:'관제', cat:'단말', sub:'목록', feat:'단말 목록 조회', sup:'O', g:`${P}/clients?pageSize=100&page=1`, field:'mac, ip, ssid, rssi, snr, channel, rxRate, txRate, trafficDown, trafficUp, uptime' },
-  { type:'관제', cat:'단말', sub:'상세정보', feat:'장비 포트명', sup:'O', g:`${P}/aps/{apMac}/wired-uplink`, field:'wiredUplink.rate' },
-  { type:'관제', cat:'단말', sub:'상세정보', feat:'장비 포트 번호', sup:'O', g:`${P}/aps/{apMac}/wired-uplink`, field:'uplink/downlink 구분만 가능' },
-  { type:'관제', cat:'단말', sub:'상세정보', feat:'연결시간', sup:'O', g:`${P}/clients?pageSize=100&page=1`, field:'data[].uptime (초)' },
-  { type:'관제', cat:'단말', sub:'상세정보', feat:'단말이 연결된 SSID 조회', sup:'O', g:`${P}/clients?pageSize=100&page=1`, field:'data[].ssid' },
-  { type:'관제', cat:'단말', sub:'트래픽', feat:'단말 트래픽', sup:'O', g:`${P}/clients?pageSize=100&page=1`, field:'trafficDown, trafficUp (bytes)' },
-  { type:'관제', cat:'장비', sub:'상세정보', feat:'장비 시리얼', sup:'O', g:`${P}/devices?pageSize=100&page=1`, field:'data[].mac' },
-  { type:'관제', cat:'장비', sub:'상세정보', feat:'장비 SW 버전', sup:'O', g:`${P}/devices?pageSize=100&page=1`, field:'firmwareVersion' },
-  { type:'관제', cat:'장비', sub:'상세정보', feat:'장비 업타임', sup:'O', g:`${P}/devices?pageSize=100&page=1`, field:'uptime' },
-  { type:'관제', cat:'장비', sub:'포트 정보', feat:'포트별 상태', sup:'O', g:`${P}/aps/{apMac}/wired-uplink`, field:'rate, duplex' },
-  { type:'관제', cat:'장비', sub:'포트 정보', feat:'포트 속도', sup:'O', g:`${P}/aps/{apMac}/wired-uplink`, field:'rate 예: "1000" (Mbps)' },
-  { type:'관제', cat:'장비', sub:'포트 정보', feat:'포트별 RX 트래픽', sup:'O', g:`${P}/aps/{apMac}/wired-uplink`, field:'downBytes, downPackets' },
-  { type:'관제', cat:'장비', sub:'포트 정보', feat:'포트별 TX 트래픽', sup:'O', g:`${P}/aps/{apMac}/wired-uplink`, field:'upBytes, upPackets' },
-  { type:'관제', cat:'장비', sub:'포트 정보', feat:'포트별 타입', sup:'X', field:'OpenAPI 미제공' },
-  { type:'관제', cat:'장비', sub:'네트워크 - 2.4G', feat:'채널 조회', sup:'O', g:`${P}/aps/{apMac}/radios`, field:'wp2g.actualChannel' },
-  { type:'관제', cat:'장비', sub:'네트워크 - 2.4G', feat:'대역폭 조회', sup:'O', g:`${P}/aps/{apMac}/radios`, field:'wp2g.bandWidth' },
-  { type:'관제', cat:'장비', sub:'네트워크 - 2.4G', feat:'TX 파워 조회', sup:'O', g:`${P}/aps/{apMac}/radios`, field:'wp2g.txPower (dBm)' },
-  { type:'관제', cat:'장비', sub:'네트워크 - 2.4G', feat:'연결 속도 조회', sup:'O', g:`${P}/aps/{apMac}/radios`, field:'wp2g.maxTxRate (Mbps)' },
-  { type:'관제', cat:'장비', sub:'네트워크 - 2.4G', feat:'SSID 목록', sup:'O', g:`${P}/wireless-network/wlans/{wlanId}/ssids?pageSize=100&page=1`, field:'name, band, security, broadcast' },
-  { type:'관제', cat:'장비', sub:'네트워크 - 2.4G', feat:'SSID 인증 방식', sup:'O', g:`${P}/wireless-network/wlans/{wlanId}/ssids?pageSize=100&page=1`, field:'security: 0=Open,3=WPA-Personal' },
-  { type:'관제', cat:'장비', sub:'네트워크 - 2.4G', feat:'SSID 암호화 방식', sup:'O', g:`${P}/wireless-network/wlans/{wlanId}/ssids?pageSize=100&page=1`, field:'pskSetting.encryptionPsk: 1=Auto,3=AES' },
-  { type:'관제', cat:'장비', sub:'네트워크 - 2.4G', feat:'SSID BSSID', sup:'X', field:'BSSID 조회 API 없음' },
-  { type:'관제', cat:'장비', sub:'네트워크 - 5G', feat:'채널 조회', sup:'O', g:`${P}/aps/{apMac}/radios`, field:'wp5g.actualChannel' },
-  { type:'관제', cat:'장비', sub:'네트워크 - 5G', feat:'대역폭 조회', sup:'O', g:`${P}/aps/{apMac}/radios`, field:'wp5g.bandWidth' },
-  { type:'관제', cat:'장비', sub:'네트워크 - 5G', feat:'TX 파워 조회', sup:'O', g:`${P}/aps/{apMac}/radios`, field:'wp5g.txPower' },
-  { type:'관제', cat:'장비', sub:'네트워크 - 5G', feat:'연결 속도 조회', sup:'O', g:`${P}/aps/{apMac}/radios`, field:'wp5g.maxTxRate' },
-  { type:'관제', cat:'장비', sub:'네트워크 - 5G', feat:'SSID 목록', sup:'O', g:`${P}/wireless-network/wlans/{wlanId}/ssids?pageSize=100&page=1`, field:'band=2 필터' },
-  { type:'관제', cat:'장비', sub:'네트워크 - 5G', feat:'SSID BSSID', sup:'X', field:'BSSID 조회 API 없음' },
-  { type:'관제', cat:'장비', sub:'시스템', feat:'CPU 사용량', sup:'O', g:`${P}/aps/{apMac}`, field:'cpuUtil (%)' },
-  { type:'관제', cat:'장비', sub:'시스템', feat:'메모리 사용량', sup:'O', g:`${P}/aps/{apMac}`, field:'memUtil (%)' },
-  { type:'관제', cat:'장비', sub:'시스템', feat:'온도 상태', sup:'X', field:'OpenAPI 미제공' },
-  { type:'관제', cat:'장비', sub:'시스템', feat:'디스크 사용량', sup:'X', field:'OpenAPI 미제공' },
-  { type:'관제', cat:'장비', sub:'시스템', feat:'프로세스 별 CPU 사용량', sup:'X', field:'총 cpuUtil만 제공' },
-  { type:'관제', cat:'장비', sub:'시스템', feat:'프로세스 별 메모리 사용량', sup:'X', field:'총 memUtil만 제공' },
-  { type:'관제', cat:'장비', sub:'무선', feat:'Radio Scan 결과 조회', sup:'O', g:'/openapi/v2/{oid}/sites/{sid}/aps/{apMac}/rf-scan-result', field:'time, status per band' },
-  { type:'관제', cat:'장비', sub:'변경 이력', feat:'Running Config 조회', sup:'O', g:`${P}/aps/{apMac}/radio-config`, field:'radioSetting2g/5g/6g' },
-  { type:'설정', cat:'단말', sub:'목록', feat:'단말 허용 (unblock)', sup:'O', sm:'POST', sp:`${P}/clients/{clientMac}/unblock`, needParam:'clientMac', field:'Success' },
-  { type:'설정', cat:'단말', sub:'목록', feat:'단말 차단 (block)', sup:'O', sm:'POST', sp:`${P}/clients/{clientMac}/block`, needParam:'clientMac', field:'Success' },
-  { type:'설정', cat:'장비', sub:'상세정보', feat:'장비 리부팅', sup:'O', sm:'POST', sp:`${P}/devices/{deviceMac}/reboot`, needParam:'deviceMac', field:'Success' },
-  { type:'설정', cat:'장비', sub:'상세정보', feat:'업그레이드', sup:'X', field:'OpenAPI 미지원' },
-  { type:'설정', cat:'무선설정', sub:'WLAN Group', feat:'WLAN Group 목록 조회', sup:'O',
-    g:`${P}/wireless-network/wlans`, field:'wlanId, name, primary' },
-  { type:'설정', cat:'무선설정', sub:'WLAN Group', feat:'WLAN Group 생성 (빈 그룹)', sup:'O',
-    sm:'POST', sp:`${P}/wireless-network/wlans`, sb:{name:"new-group",clone:false},
-    vf:`${P}/wireless-network/wlans`, field:'clone:false=빈 그룹' },
-  { type:'설정', cat:'무선설정', sub:'WLAN Group', feat:'WLAN Group 생성 (복제)', sup:'O',
-    sm:'POST', sp:`${P}/wireless-network/wlans`, sb:{name:"cloned-group",clone:true,clonedWlanId:""},
-    vf:`${P}/wireless-network/wlans`, field:'clone:true + clonedWlanId' },
-  { type:'설정', cat:'무선설정', sub:'WLAN Group', feat:'WLAN Group 이름 변경', sup:'O',
-    sm:'PATCH', sp:`${P}/wireless-network/wlans/{wlanId}`, sb:{name:"renamed-group"},
-    vf:`${P}/wireless-network/wlans`, field:'name: 1~128자' },
-  { type:'설정', cat:'무선설정', sub:'WLAN Group', feat:'WLAN Group 삭제', sup:'O',
-    sm:'DELETE', sp:`${P}/wireless-network/wlans/{wlanId}`,
-    vf:`${P}/wireless-network/wlans`, field:'SSID 먼저 삭제 필요 (-33205)' },
-  { type:'설정', cat:'무선설정', sub:'WLAN Group', feat:'AP의 WLAN Override 조회', sup:'O',
-    g:`${P}/aps/{apMac}/override`, field:'ssidOverrides: ssidId, ssidName, band, security, ssidEnable' },
-  { type:'설정', cat:'무선설정', sub:'WLAN Group', feat:'AP의 WLAN Override 설정', sup:'O',
-    sm:'PATCH', sp:`${P}/aps/{apMac}/override`, sb:{ssidOverrides:[{ssidId:0,overrideSsidEnable:true,overrideVlanEnable:false,ssidEnable:true,overrideSsidName:"AP-name",overrideSsidPassword:"password123"}]},
-    vf:`${P}/aps/{apMac}/override`, field:'AP별 SSID 이름/비밀번호/활성화 개별 설정' },
-  { type:'설정', cat:'무선설정', sub:'Radio', feat:'무선 사용 여부 설정', sup:'O',
-    sm:'PATCH', sp:`${P}/aps/{apMac}/radio-config`, sb:{radioSetting2g:{radioEnable:true}},
-    vf:`${P}/aps/{apMac}/radio-config`, field:'radioEnable: true/false' },
-  { type:'설정', cat:'무선설정', sub:'Radio', feat:'채널 설정', sup:'O',
-    sm:'PATCH', sp:`${P}/aps/{apMac}/radio-config`, sb:{radioSetting2g:{channel:"6"}},
-    vf:`${P}/aps/{apMac}/radio-config`, field:'"0"=auto, "1","6","11"...' },
-  { type:'설정', cat:'무선설정', sub:'Radio', feat:'대역폭 설정', sup:'O',
-    sm:'PATCH', sp:`${P}/aps/{apMac}/radio-config`, sb:{radioSetting2g:{channelWidth:"4"}},
-    vf:`${P}/aps/{apMac}/radio-config`, field:'"1"=20MHz,"4"=40MHz,"6"=80/160MHz' },
-  { type:'설정', cat:'무선설정', sub:'Radio', feat:'Tx 파워 설정', sup:'O',
-    sm:'PATCH', sp:`${P}/aps/{apMac}/radio-config`, sb:{radioSetting2g:{txPower:20}},
-    vf:`${P}/aps/{apMac}/radio-config`, field:'7~28 dBm' },
-  { type:'설정', cat:'무선설정', sub:'Beacon/고급', feat:'Fragmentation 설정', sup:'O',
-    sm:'PATCH', sp:`${P}/beacon-control`, sb:{beaconControl:{fragmentationThreshold2g:2346}},
-    vf:`${P}/beacon-control`, field:'default: 2346' },
-  { type:'설정', cat:'무선설정', sub:'Beacon/고급', feat:'RTS Threshold 설정', sup:'O',
-    sm:'PATCH', sp:`${P}/beacon-control`, sb:{beaconControl:{rtsThreshold2g:2347}},
-    vf:`${P}/beacon-control`, field:'default: 2347' },
-  { type:'설정', cat:'무선설정', sub:'Beacon/고급', feat:'DTIM 간격 설정', sup:'O',
-    sm:'PATCH', sp:`${P}/beacon-control`, sb:{beaconControl:{dtimPeriod2g:1}},
-    vf:`${P}/beacon-control`, field:'default: 1' },
-  { type:'설정', cat:'무선설정', sub:'Beacon/고급', feat:'Beacon 간격 설정', sup:'O',
-    sm:'PATCH', sp:`${P}/beacon-control`, sb:{beaconControl:{beaconIntvMode2g:0}},
-    vf:`${P}/beacon-control`, field:'default: 0' },
-  { type:'설정', cat:'무선설정', sub:'Beacon/고급', feat:'Preamble 방식 설정', sup:'X', field:'OpenAPI 미지원' },
-  { type:'설정', cat:'무선설정', sub:'Beacon/고급', feat:'단말갯수 제한 설정', sup:'X', field:'OpenAPI 미지원' },
-  { type:'설정', cat:'무선설정', sub:'Beacon/고급', feat:'무선 최적화 모드 설정', sup:'X', field:'OpenAPI 미지원' },
-  { type:'설정', cat:'무선설정', sub:'Beacon/고급', feat:'Beamforming tx 설정', sup:'X', field:'OpenAPI 미지원' },
-  { type:'설정', cat:'무선설정', sub:'Beacon/고급', feat:'Beamforming rx 설정', sup:'X', field:'OpenAPI 미지원' },
-  { type:'설정', cat:'무선설정', sub:'SSID', feat:'SSID 명 변경', sup:'O',
+// API 경로 기준 묶음. items: 해당 API에서 조회/설정 가능한 기능들
+const FEATURES_BY_API = [
+  { type:'관제', cat:'단말', api:`GET ${P}/clients?pageSize=100&page=1`, g:`${P}/clients?pageSize=100&page=1`,
+    items:['단말 목록 조회','연결시간 (uptime)','단말이 연결된 SSID','단말 트래픽 (trafficDown/Up)','RSSI, SNR, channel, rxRate, txRate'] },
+  { type:'관제', cat:'장비', api:`GET ${P}/devices?pageSize=100&page=1`, g:`${P}/devices?pageSize=100&page=1`,
+    items:['장비 MAC (시리얼 대체)','장비 SW 버전 (firmwareVersion)','장비 업타임 (uptime)','장비 모델/IP/상태'] },
+  { type:'관제', cat:'장비', api:`GET ${P}/aps/{apMac}`, g:`${P}/aps/{apMac}`,
+    items:['CPU 사용량 (cpuUtil %)','메모리 사용량 (memUtil %)','wlanId 확인','펌웨어/모델/uptimeLong'] },
+  { type:'관제', cat:'포트', api:`GET ${P}/aps/{apMac}/wired-uplink`, g:`${P}/aps/{apMac}/wired-uplink`,
+    items:['포트 상태 (rate, duplex)','포트 속도','RX 트래픽 (downBytes, downPackets)','TX 트래픽 (upBytes, upPackets)'] },
+  { type:'관제', cat:'포트', api:`GET ${P}/aps/{apMac}/wired-downlink`, g:`${P}/aps/{apMac}/wired-downlink`,
+    items:['다운링크 포트 정보'] },
+  { type:'관제', cat:'네트워크', api:`GET ${P}/aps/{apMac}/radios`, g:`${P}/aps/{apMac}/radios`,
+    items:['2.4G - 채널 (wp2g.actualChannel)','2.4G - 대역폭 (wp2g.bandWidth)','2.4G - TX파워 (wp2g.txPower)','2.4G - 연결속도 (wp2g.maxTxRate)','5G - 채널 (wp5g.actualChannel)','5G - 대역폭 (wp5g.bandWidth)','5G - TX파워 (wp5g.txPower)','5G - 연결속도 (wp5g.maxTxRate)','6G - 채널/대역폭/TX파워 (wp6g.*)','Radio 트래픽 (radioTraffic2g/5g/6g)'] },
+  { type:'관제', cat:'네트워크', api:`GET ${P}/aps/{apMac}/radio-config`, g:`${P}/aps/{apMac}/radio-config`,
+    items:['radioEnable (2g/5g/6g)','channelWidth','channel','txPower','wirelessMode'] },
+  { type:'관제', cat:'SSID', api:`GET ${P}/wireless-network/wlans/{wlanId}/ssids?pageSize=100&page=1`, g:`${P}/wireless-network/wlans/{wlanId}/ssids?pageSize=100&page=1`,
+    items:['SSID 목록 (name, band, security, broadcast)','인증 방식 (security: 0=Open, 3=WPA-Personal)','암호화 방식 (pskSetting.encryptionPsk)','band별 필터 (1=2.4G, 2=5G, 3=dual, 4=6G)'] },
+  { type:'관제', cat:'SSID', api:`GET ${P}/wireless-network/wlans`, g:`${P}/wireless-network/wlans`,
+    items:['WLAN Group 목록 (wlanId, name, primary)'] },
+  { type:'관제', cat:'무선', api:`GET /openapi/v2/{oid}/sites/{sid}/aps/{apMac}/rf-scan-result`, g:'/openapi/v2/{oid}/sites/{sid}/aps/{apMac}/rf-scan-result',
+    items:['RF Scan 결과 (time, status, status2g/5g/6g)'] },
+  { type:'관제', cat:'시스템', api:`GET ${P}/beacon-control`, g:`${P}/beacon-control`,
+    items:['Beacon 간격 (beaconIntvMode)','DTIM (dtimPeriod)','RTS Threshold','Fragmentation Threshold','Airtime Fairness (enable per band)'] },
+  { type:'관제', unsup:true, items:['포트별 타입','BSSID 조회','온도 상태','디스크 사용량','프로세스별 CPU/메모리'] },
+
+  { type:'설정', cat:'단말', api:`POST ${P}/clients/{clientMac}/block`, sm:'POST', sp:`${P}/clients/{clientMac}/block`, needParam:'clientMac',
+    items:['단말 차단'], field:'Success' },
+  { type:'설정', cat:'단말', api:`POST ${P}/clients/{clientMac}/unblock`, sm:'POST', sp:`${P}/clients/{clientMac}/unblock`, needParam:'clientMac',
+    items:['단말 허용 (차단 해제)'], field:'Success' },
+  { type:'설정', cat:'장비', api:`POST ${P}/devices/{deviceMac}/reboot`, sm:'POST', sp:`${P}/devices/{deviceMac}/reboot`, needParam:'deviceMac',
+    items:['장비 리부팅'], field:'Success' },
+  { type:'설정', cat:'Radio', api:`PATCH ${P}/aps/{apMac}/radio-config`,
+    sm:'PATCH', sp:`${P}/aps/{apMac}/radio-config`, vf:`${P}/aps/{apMac}/radio-config`,
+    sb:{radioSetting2g:{radioEnable:true,channelWidth:"4",channel:"0",txPower:26},radioSetting5g:{radioEnable:true,channelWidth:"6",channel:"0",txPower:27}},
+    items:['무선 ON/OFF (radioEnable)','채널 설정 (channel: "0"=auto)','대역폭 설정 (channelWidth: "1"=20,"4"=40,"6"=80/160)','TX 파워 설정 (txPower: 7~28 dBm)'] },
+  { type:'설정', cat:'Beacon/고급', api:`PATCH ${P}/beacon-control`,
+    sm:'PATCH', sp:`${P}/beacon-control`, vf:`${P}/beacon-control`,
+    sb:{beaconControl:{dtimPeriod2g:1,rtsThreshold2g:2347,fragmentationThreshold2g:2346,beaconIntvMode2g:0},airtimeFairness:{enable2g:false,enable5g:false,enable6g:false}},
+    items:['Beacon 간격 설정','DTIM 간격 설정','RTS Threshold 설정','Fragmentation 설정','Airtime Fairness 설정'] },
+  { type:'설정', cat:'WLAN Group', api:`POST ${P}/wireless-network/wlans`,
+    sm:'POST', sp:`${P}/wireless-network/wlans`, vf:`${P}/wireless-network/wlans`,
+    sb:{name:"new-group",clone:false},
+    items:['WLAN Group 생성 (clone:false=빈, clone:true+clonedWlanId=복제)'] },
+  { type:'설정', cat:'WLAN Group', api:`PATCH ${P}/wireless-network/wlans/{wlanId}`,
+    sm:'PATCH', sp:`${P}/wireless-network/wlans/{wlanId}`, vf:`${P}/wireless-network/wlans`,
+    sb:{name:"renamed-group"},
+    items:['WLAN Group 이름 변경 (1~128자)'] },
+  { type:'설정', cat:'WLAN Group', api:`DELETE ${P}/wireless-network/wlans/{wlanId}`,
+    sm:'DELETE', sp:`${P}/wireless-network/wlans/{wlanId}`, vf:`${P}/wireless-network/wlans`,
+    items:['WLAN Group 삭제 (SSID 먼저 삭제 필요, -33205)'] },
+  { type:'설정', cat:'WLAN Group', api:`GET/PATCH ${P}/aps/{apMac}/override`,
+    g:`${P}/aps/{apMac}/override`,
+    sm:'PATCH', sp:`${P}/aps/{apMac}/override`, vf:`${P}/aps/{apMac}/override`,
+    sb:{ssidOverrides:[{ssidId:0,overrideSsidEnable:true,overrideVlanEnable:false,ssidEnable:true,overrideSsidName:"AP-name",overrideSsidPassword:"password123"}]},
+    items:['AP별 WLAN Override 조회/설정','AP별 SSID 이름/비밀번호/활성화 개별 Override'] },
+  { type:'설정', cat:'SSID', api:`PATCH ${P}/wireless-network/wlans/{wlanId}/ssids/{ssidId}/update-basic-config`,
     sm:'PATCH', sp:`${P}/wireless-network/wlans/{wlanId}/ssids/{ssidId}/update-basic-config`, needParam:'ssidId',
-    sb:{name:"new-name",band:3,security:3,broadcast:true,mloEnable:false,pmfMode:2,enable11r:false,hidePwd:true,vlanEnable:false,guestNetEnable:false,greEnable:false,pskSetting:{securityKey:"password12345",versionPsk:2,encryptionPsk:1,gikRekeyPskEnable:false}},
-    vf:`${P}/wireless-network/wlans/{wlanId}/ssids?pageSize=100&page=1`, field:'1-32 UTF-8 chars' },
-  { type:'설정', cat:'무선설정', sub:'SSID', feat:'SSID 인증 방식 설정', sup:'O',
-    sm:'PATCH', sp:`${P}/wireless-network/wlans/{wlanId}/ssids/{ssidId}/update-basic-config`, needParam:'ssidId',
+    vf:`${P}/wireless-network/wlans/{wlanId}/ssids?pageSize=100&page=1`,
     sb:{name:"my-ssid",band:3,security:3,broadcast:true,mloEnable:false,pmfMode:2,enable11r:false,hidePwd:true,vlanEnable:false,guestNetEnable:false,greEnable:false,pskSetting:{securityKey:"password12345",versionPsk:2,encryptionPsk:1,gikRekeyPskEnable:false}},
-    vf:`${P}/wireless-network/wlans/{wlanId}/ssids?pageSize=100&page=1`, field:'security: 0=Open, 3=WPA-Personal' },
-  { type:'설정', cat:'무선설정', sub:'SSID', feat:'SSID 비밀번호 설정', sup:'O',
-    sm:'PATCH', sp:`${P}/wireless-network/wlans/{wlanId}/ssids/{ssidId}/update-basic-config`, needParam:'ssidId',
-    sb:{name:"my-ssid",band:3,security:3,broadcast:true,mloEnable:false,pmfMode:2,enable11r:false,hidePwd:true,vlanEnable:false,guestNetEnable:false,greEnable:false,pskSetting:{securityKey:"newpassword",versionPsk:2,encryptionPsk:1,gikRekeyPskEnable:false}},
-    vf:`${P}/wireless-network/wlans/{wlanId}/ssids?pageSize=100&page=1`, field:'securityKey: 8-63 ASCII' },
-  { type:'설정', cat:'무선설정', sub:'SSID', feat:'SSID 숨김 설정', sup:'O',
-    sm:'PATCH', sp:`${P}/wireless-network/wlans/{wlanId}/ssids/{ssidId}/update-basic-config`, needParam:'ssidId',
-    sb:{name:"my-ssid",band:3,security:3,broadcast:false,mloEnable:false,pmfMode:2,enable11r:false,hidePwd:true,vlanEnable:false,guestNetEnable:false,greEnable:false,pskSetting:{securityKey:"password12345",versionPsk:2,encryptionPsk:1,gikRekeyPskEnable:false}},
-    vf:`${P}/wireless-network/wlans/{wlanId}/ssids?pageSize=100&page=1`, field:'broadcast: true=show, false=hide' },
-  { type:'설정', cat:'무선설정', sub:'SSID', feat:'SSID 단말간 통신 단절', sup:'O', sm:'POST', sp:`${P}/acls/eap-acls`, sb:{}, field:'ACL로 제어' },
-  { type:'설정', cat:'무선설정', sub:'SSID', feat:'SSID WMM 사용 여부 설정', sup:'X', field:'OpenAPI 미지원' },
-  { type:'설정', cat:'무선설정', sub:'5G', feat:'DFS 사용 여부 설정', sup:'X', field:'OpenAPI 미지원' },
-  { type:'설정', cat:'무선설정', sub:'WMM', feat:'WMM 2.4GHz 설정', sup:'X', field:'OpenAPI 미지원' },
-  { type:'설정', cat:'무선설정', sub:'WMM', feat:'WMM 5GHz 설정', sup:'X', field:'OpenAPI 미지원' },
+    items:['SSID 명 변경','인증 방식 (security: 0/3)','암호화 방식 (encryptionPsk: 1/3)','비밀번호 (securityKey)','숨김 설정 (broadcast: true/false)','band 변경 (1/2/3/4/7)'] },
+  { type:'설정', cat:'SSID', api:`POST ${P}/acls/eap-acls`,
+    sm:'POST', sp:`${P}/acls/eap-acls`, sb:{},
+    items:['단말간 통신 단절 (ACL)'] },
+  { type:'설정', unsup:true, items:['업그레이드','NAT/BRIDGE 모드','Preamble 설정','단말갯수 제한','무선 최적화 모드','Beamforming tx/rx','WMM 설정','DFS 설정'] },
 ];
+// Flatten for backward compat
+const FEATURES = FEATURES_BY_API;
 
 let funcFilter = 'all';
 function filterFunc(f) { funcFilter = f; renderFunc(); }
@@ -806,11 +763,10 @@ function switchView(v) {
   if (v === 'func') renderFunc();
 }
 
-// Run feature API
-const featSetDone = new Set(); // track which features had SET run
+const featSetDone = new Set();
 
 async function runFeat(idx, mode) {
-  const f = FEATURES[idx];
+  const f = FEATURES_BY_API[idx];
   if (!S.accessToken) { alert('Access Token이 없습니다.\n먼저 "Access Token" 버튼을 클릭하세요.'); return; }
   if (mode === 'verify' && !featSetDone.has(idx)) { alert('먼저 SET을 실행한 후 VERIFY로 확인하세요.'); return; }
   const resultEl = el(`fr-${idx}`);
@@ -825,26 +781,16 @@ async function runFeat(idx, mode) {
       path = resolvePath(f.sp);
       const ta = el(`fb-${idx}`);
       body = ta ? JSON.parse(ta.value) : f.sb;
-      if (f.needParam) {
-        const pv = el(`fp-${idx}`);
-        if (pv) path = path.replace(`{${f.needParam}}`, pv.value);
-      }
+      if (f.needParam) { const pv = el(`fp-${idx}`); if (pv) path = path.replace(`{${f.needParam}}`, pv.value); }
       featSetDone.add(idx);
     } else if (mode === 'verify') {
       path = resolvePath(f.vf);
-      if (f.needParam) {
-        const pv = el(`fp-${idx}`);
-        if (pv) {
-          path = path.replace(`{${f.needParam}}`, pv.value);
-          path = path.replace(`{ssidId}`, pv.value);
-        }
-      }
+      if (f.needParam) { const pv = el(`fp-${idx}`); if (pv) { path = path.replace(`{${f.needParam}}`, pv.value); path = path.replace(`{ssidId}`, pv.value); } }
     } else {
       path = resolvePath(f.g);
     }
-    const url = base + path;
-    const resp = await proxy(url, method, authHeader(), body);
-    const label = mode === 'set' ? '<b style="color:#fb923c">[SET Result]</b> ' : mode === 'verify' ? '<b style="color:#34d399">[VERIFY Result]</b> ' : '';
+    const resp = await proxy(base + path, method, authHeader(), body);
+    const label = mode === 'set' ? '<b style="color:#fb923c">[SET]</b> ' : mode === 'verify' ? '<b style="color:#34d399">[VERIFY]</b> ' : '';
     resultEl.innerHTML = label + highlight(JSON.stringify(resp, null, 2));
     resultEl.style.cursor = 'pointer';
     resultEl.onclick = () => { resultEl.style.display = 'none'; resultEl.onclick = null; };
@@ -854,62 +800,68 @@ async function runFeat(idx, mode) {
   }
 }
 
-function toggleFeatResult(idx) {
-  const r = el(`fr-${idx}`);
-  if (r.style.display === 'none' || !r.style.display) r.style.display = 'block';
-  else r.style.display = 'none';
-}
-
 function renderFunc() {
-  const filtered = funcFilter === 'all' ? FEATURES : FEATURES.filter(f => f.sup === funcFilter);
-  let html = '';
-  let lastType = '', lastCat = '', lastSub = '';
-  const total = FEATURES.length, supported = FEATURES.filter(f=>f.sup==='O').length, notSup = FEATURES.filter(f=>f.sup==='X').length;
-  html += `<div style="margin-bottom:12px; font-size:14px; color:#cbd5e1;">Total: <b style="color:#e2e8f0">${total}</b> | <span style="color:#34d399">O Supported: <b>${supported}</b></span> | <span style="color:#fca5a5">X Not Supported: <b>${notSup}</b></span></div>`;
+  const list = FEATURES_BY_API;
+  const supCount = list.filter(f => !f.unsup).length;
+  const unsupItems = list.filter(f => f.unsup).flatMap(f => f.items);
+  let html = `<div style="margin-bottom:12px; font-size:14px; color:#cbd5e1;">API: <b style="color:#e2e8f0">${supCount}</b>개 | <span style="color:#fca5a5">미지원: <b>${unsupItems.length}</b>개</span></div>`;
 
-  filtered.forEach(f => {
-    const idx = FEATURES.indexOf(f);
+  let lastType = '';
+  const filtered = funcFilter === 'all' ? list : funcFilter === 'O' ? list.filter(f=>!f.unsup) : list.filter(f=>f.unsup);
+
+  filtered.forEach((f, idx) => {
+    const realIdx = list.indexOf(f);
     if (f.type !== lastType) {
       if (lastType) html += '</div>';
       html += `<div style="background:#1e293b; border-radius:10px; border:1px solid #334155; padding:16px; margin-bottom:12px;">`;
       html += `<div style="font-size:18px; font-weight:700; color:${f.type==='관제'?'#38bdf8':'#fb923c'}; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid #334155;">${f.type}</div>`;
-      lastType = f.type; lastCat = ''; lastSub = '';
+      lastType = f.type;
     }
-    if (f.cat !== lastCat) {
-      html += `<div style="font-size:16px; font-weight:600; color:#e2e8f0; margin:14px 0 6px; padding-left:4px;">${f.cat}</div>`;
-      lastCat = f.cat; lastSub = '';
-    }
-    if (f.sub !== lastSub) {
-      html += `<div style="font-size:14px; color:#cbd5e1; margin:8px 0 4px; padding-left:16px; font-weight:600;">${f.sub}</div>`;
-      lastSub = f.sub;
-    }
-    const supColor = f.sup==='O' ? '#34d399' : f.sup==='X' ? '#fca5a5' : '#f59e0b';
-    const supBg = f.sup==='O' ? '#064e3b' : f.sup==='X' ? '#7f1d1d' : '#78350f';
-    const hasGet = !!f.g;
-    const hasSet = !!f.sp;
-    const hasVerify = !!f.vf;
 
-    html += `<div style="padding:8px 10px 8px 28px; border-bottom:1px solid #0f172a;">`;
-    // Header row
-    html += `<div style="display:flex; align-items:center; gap:8px; font-size:14px;">`;
-    html += `<span style="background:${supBg}; color:${supColor}; padding:3px 10px; border-radius:3px; font-weight:700; font-size:13px;">${f.sup}</span>`;
-    html += `<span style="color:#e2e8f0; font-weight:500; min-width:0;">${f.feat}</span>`;
-    html += `<span style="color:#94a3b8; font-size:12px; margin-left:4px; white-space:nowrap;">${f.field||''}</span>`;
-    html += `<span style="flex:1;"></span>`;
-    if (hasGet) html += `<button class="run-btn" style="font-size:13px; padding:4px 12px;" onclick="runFeat(${idx},'get')">GET</button>`;
-    if (hasSet) html += `<button class="run-btn" style="font-size:13px; padding:4px 12px; background:#f59e0b; color:#0f172a;" onclick="runFeat(${idx},'set')">SET</button>`;
-    if (hasVerify) html += `<button class="run-btn" style="font-size:13px; padding:4px 12px; background:#34d399; color:#0f172a;" onclick="runFeat(${idx},'verify')">VERIFY</button>`;
-    html += `</div>`;
-    // Param input + body editor (for SET features)
-    if (hasSet) {
-      html += `<div style="margin-top:6px;">`;
-      if (f.needParam) html += `<input id="fp-${idx}" placeholder="${f.needParam}" style="background:#0f172a;border:1px solid #334155;border-radius:4px;padding:6px 10px;color:#e2e8f0;font-size:13px;font-family:Consolas,monospace;width:260px;margin-right:4px;" />`;
-      if (f.sb) html += `<details style="margin-top:6px;"><summary style="font-size:13px;color:#cbd5e1;cursor:pointer;">Request Body</summary><textarea id="fb-${idx}" style="width:100%;min-height:140px;background:#0f172a;border:1px solid #334155;border-radius:4px;padding:10px;color:#e2e8f0;font-size:13px;font-family:Consolas,monospace;margin-top:4px;resize:vertical;">${JSON.stringify(f.sb,null,2)}</textarea></details>`;
+    if (f.unsup) {
+      // 미지원 묶음
+      html += `<div style="padding:10px 10px 10px 16px;">`;
+      html += `<div style="font-size:15px; font-weight:600; color:#fca5a5; margin-bottom:8px;">미지원 기능 (OpenAPI 미제공)</div>`;
+      f.items.forEach(item => {
+        html += `<div style="display:flex; align-items:center; gap:8px; padding:4px 0 4px 12px; font-size:13px;">`;
+        html += `<span style="background:#7f1d1d; color:#fca5a5; padding:2px 8px; border-radius:3px; font-weight:700; font-size:12px;">X</span>`;
+        html += `<span style="color:#94a3b8;">${item}</span>`;
+        html += `</div>`;
+      });
+      html += `</div>`;
+    } else {
+      // API 묶음
+      const hasGet = !!f.g;
+      const hasSet = !!f.sp;
+      const hasVerify = !!f.vf;
+      const shortApi = (f.api||'').replace(/\/openapi\/v[12]\/\{oid\}\/sites\/\{sid\}/g, '...');
+
+      html += `<div style="padding:10px; margin-bottom:6px; background:#0f172a; border-radius:8px; border:1px solid #1e293b;">`;
+      // API header
+      html += `<div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">`;
+      if (f.cat) html += `<span style="font-size:13px; font-weight:600; color:#e2e8f0; background:#334155; padding:2px 10px; border-radius:4px;">${f.cat}</span>`;
+      html += `<span style="font-size:13px; font-family:Consolas,monospace; color:#38bdf8; flex:1;">${shortApi}</span>`;
+      if (hasGet) html += `<button class="run-btn" style="font-size:13px; padding:4px 12px;" onclick="runFeat(${realIdx},'get')">GET</button>`;
+      if (hasSet) html += `<button class="run-btn" style="font-size:13px; padding:4px 12px; background:#f59e0b; color:#0f172a;" onclick="runFeat(${realIdx},'set')">SET</button>`;
+      if (hasVerify) html += `<button class="run-btn" style="font-size:13px; padding:4px 12px; background:#34d399; color:#0f172a;" onclick="runFeat(${realIdx},'verify')">VERIFY</button>`;
+      html += `</div>`;
+      // Items list
+      html += `<div style="padding-left:8px;">`;
+      f.items.forEach(item => {
+        html += `<div style="font-size:13px; color:#cbd5e1; padding:2px 0;">- ${item}</div>`;
+      });
+      html += `</div>`;
+      // Param input + body
+      if (hasSet) {
+        html += `<div style="margin-top:6px;">`;
+        if (f.needParam) html += `<input id="fp-${realIdx}" placeholder="${f.needParam}" style="background:#1e293b;border:1px solid #334155;border-radius:4px;padding:6px 10px;color:#e2e8f0;font-size:13px;font-family:Consolas,monospace;width:260px;" />`;
+        if (f.sb) html += `<details style="margin-top:4px;"><summary style="font-size:13px;color:#94a3b8;cursor:pointer;">Request Body</summary><textarea id="fb-${realIdx}" style="width:100%;min-height:140px;background:#1e293b;border:1px solid #334155;border-radius:4px;padding:10px;color:#e2e8f0;font-size:13px;font-family:Consolas,monospace;margin-top:4px;resize:vertical;">${JSON.stringify(f.sb,null,2)}</textarea></details>`;
+        html += `</div>`;
+      }
+      // Result
+      html += `<div id="fr-${realIdx}" class="api-result" style="display:none; margin-top:6px; max-height:350px;"></div>`;
       html += `</div>`;
     }
-    // Result area (hidden, with toggle)
-    html += `<div id="fr-${idx}" class="api-result" style="display:none; margin-top:6px; max-height:350px; position:relative;"></div>`;
-    html += `</div>`;
   });
   if (lastType) html += '</div>';
   el('funcContent').innerHTML = html;
