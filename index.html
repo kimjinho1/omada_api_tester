@@ -834,7 +834,7 @@ function renderFunc() {
       const hasGet = !!f.g;
       const hasSet = !!f.sp;
       const hasVerify = !!f.vf;
-      const shortApi = (f.api||'').replace(/\/openapi\/v[12]\/\{oid\}\/sites\/\{sid\}/g, '...');
+      const shortApi = f.api||'';
 
       html += `<div style="padding:10px; margin-bottom:6px; background:#0f172a; border-radius:8px; border:1px solid #1e293b;">`;
       // API header
