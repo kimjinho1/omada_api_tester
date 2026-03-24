@@ -771,9 +771,12 @@ function switchView(v) {
 }
 
 // Run feature API
+const featSetDone = new Set(); // track which features had SET run
+
 async function runFeat(idx, mode) {
   const f = FEATURES[idx];
   if (!S.accessToken) { alert('Access Token이 없습니다.\n먼저 "Access Token" 버튼을 클릭하세요.'); return; }
+  if (mode === 'verify' && !featSetDone.has(idx)) { alert('먼저 SET을 실행한 후 VERIFY로 확인하세요.'); return; }
   const resultEl = el(`fr-${idx}`);
   resultEl.style.display = 'block';
   resultEl.textContent = 'Loading...';
@@ -784,26 +787,39 @@ async function runFeat(idx, mode) {
     if (mode === 'set') {
       method = f.sm || 'PATCH';
       path = resolvePath(f.sp);
-      // Get body from textarea if exists
       const ta = el(`fb-${idx}`);
       body = ta ? JSON.parse(ta.value) : f.sb;
-      // Handle needParam
       if (f.needParam) {
         const pv = el(`fp-${idx}`);
         if (pv) path = path.replace(`{${f.needParam}}`, pv.value);
       }
+      featSetDone.add(idx);
     } else if (mode === 'verify') {
       path = resolvePath(f.vf);
+      if (f.needParam) {
+        const pv = el(`fp-${idx}`);
+        if (pv) {
+          path = path.replace(`{${f.needParam}}`, pv.value);
+          path = path.replace(`{ssidId}`, pv.value);
+        }
+      }
     } else {
       path = resolvePath(f.g);
     }
     const url = base + path;
     const resp = await proxy(url, method, authHeader(), body);
-    resultEl.innerHTML = (mode === 'set' ? `<b style="color:#fb923c">[SET]</b> ` : mode === 'verify' ? `<b style="color:#34d399">[VERIFY]</b> ` : '') + highlight(JSON.stringify(resp, null, 2));
+    const label = mode === 'set' ? '<b style="color:#fb923c">[SET Result]</b> ' : mode === 'verify' ? '<b style="color:#34d399">[VERIFY Result]</b> ' : '';
+    resultEl.innerHTML = `<span onclick="toggleFeatResult(${idx})" style="cursor:pointer;color:#64748b;font-size:10px;float:right;">[close]</span>` + label + highlight(JSON.stringify(resp, null, 2));
   } catch (e) {
     resultEl.textContent = `Error: ${e.message}`;
     resultEl.classList.add('error');
   }
+}
+
+function toggleFeatResult(idx) {
+  const r = el(`fr-${idx}`);
+  if (r.style.display === 'none' || !r.style.display) r.style.display = 'block';
+  else r.style.display = 'none';
 }
 
 function renderFunc() {
@@ -818,15 +834,15 @@ function renderFunc() {
     if (f.type !== lastType) {
       if (lastType) html += '</div>';
       html += `<div style="background:#1e293b; border-radius:10px; border:1px solid #334155; padding:16px; margin-bottom:12px;">`;
-      html += `<div style="font-size:15px; font-weight:700; color:${f.type==='관제'?'#38bdf8':'#fb923c'}; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid #334155;">${f.type}</div>`;
+      html += `<div style="font-size:16px; font-weight:700; color:${f.type==='관제'?'#38bdf8':'#fb923c'}; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid #334155;">${f.type}</div>`;
       lastType = f.type; lastCat = ''; lastSub = '';
     }
     if (f.cat !== lastCat) {
-      html += `<div style="font-size:13px; font-weight:600; color:#e2e8f0; margin:12px 0 6px; padding-left:4px;">${f.cat}</div>`;
+      html += `<div style="font-size:14px; font-weight:600; color:#e2e8f0; margin:14px 0 6px; padding-left:4px;">${f.cat}</div>`;
       lastCat = f.cat; lastSub = '';
     }
     if (f.sub !== lastSub) {
-      html += `<div style="font-size:11px; color:#64748b; margin:8px 0 4px; padding-left:16px; font-weight:600;">${f.sub}</div>`;
+      html += `<div style="font-size:12px; color:#94a3b8; margin:8px 0 4px; padding-left:16px; font-weight:600;">${f.sub}</div>`;
       lastSub = f.sub;
     }
     const supColor = f.sup==='O' ? '#34d399' : f.sup==='X' ? '#fca5a5' : '#f59e0b';
@@ -835,25 +851,26 @@ function renderFunc() {
     const hasSet = !!f.sp;
     const hasVerify = !!f.vf;
 
-    html += `<div style="padding:6px 8px 6px 28px; border-bottom:1px solid #0f172a;">`;
+    html += `<div style="padding:8px 10px 8px 28px; border-bottom:1px solid #0f172a;">`;
     // Header row
-    html += `<div style="display:flex; align-items:center; gap:8px; font-size:11px;">`;
-    html += `<span style="background:${supBg}; color:${supColor}; padding:1px 6px; border-radius:3px; font-weight:700; font-size:10px;">${f.sup}</span>`;
-    html += `<span style="color:#e2e8f0; flex:1; font-weight:500;">${f.feat}</span>`;
-    html += `<span style="color:#475569; font-size:10px; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${f.field||''}</span>`;
-    if (hasGet) html += `<button class="run-btn" style="font-size:10px; padding:2px 8px;" onclick="runFeat(${idx},'get')">GET</button>`;
-    if (hasSet) html += `<button class="run-btn" style="font-size:10px; padding:2px 8px; background:#f59e0b; color:#0f172a;" onclick="runFeat(${idx},'set')">SET</button>`;
-    if (hasVerify) html += `<button class="run-btn" style="font-size:10px; padding:2px 8px; background:#34d399; color:#0f172a;" onclick="runFeat(${idx},'verify')">VERIFY</button>`;
+    html += `<div style="display:flex; align-items:center; gap:6px; font-size:13px;">`;
+    html += `<span style="background:${supBg}; color:${supColor}; padding:2px 8px; border-radius:3px; font-weight:700; font-size:11px;">${f.sup}</span>`;
+    html += `<span style="color:#e2e8f0; font-weight:500; min-width:0;">${f.feat}</span>`;
+    html += `<span style="color:#64748b; font-size:11px; margin-left:4px; white-space:nowrap;">${f.field||''}</span>`;
+    html += `<span style="flex:1;"></span>`;
+    if (hasGet) html += `<button class="run-btn" style="font-size:11px; padding:3px 10px;" onclick="runFeat(${idx},'get')">GET</button>`;
+    if (hasSet) html += `<button class="run-btn" style="font-size:11px; padding:3px 10px; background:#f59e0b; color:#0f172a;" onclick="runFeat(${idx},'set')">SET</button>`;
+    if (hasVerify) html += `<button class="run-btn" style="font-size:11px; padding:3px 10px; background:#34d399; color:#0f172a;" onclick="runFeat(${idx},'verify')">VERIFY</button>`;
     html += `</div>`;
     // Param input + body editor (for SET features)
     if (hasSet) {
-      html += `<div style="margin-top:4px;">`;
-      if (f.needParam) html += `<input id="fp-${idx}" placeholder="${f.needParam}" style="background:#0f172a;border:1px solid #334155;border-radius:4px;padding:3px 6px;color:#e2e8f0;font-size:10px;font-family:Consolas,monospace;width:200px;margin-right:4px;" />`;
-      if (f.sb) html += `<details style="margin-top:4px;"><summary style="font-size:10px;color:#64748b;cursor:pointer;">Request Body</summary><textarea id="fb-${idx}" style="width:100%;min-height:100px;background:#0f172a;border:1px solid #334155;border-radius:4px;padding:6px;color:#e2e8f0;font-size:10px;font-family:Consolas,monospace;margin-top:4px;resize:vertical;">${JSON.stringify(f.sb,null,2)}</textarea></details>`;
+      html += `<div style="margin-top:6px;">`;
+      if (f.needParam) html += `<input id="fp-${idx}" placeholder="${f.needParam}" style="background:#0f172a;border:1px solid #334155;border-radius:4px;padding:4px 8px;color:#e2e8f0;font-size:12px;font-family:Consolas,monospace;width:240px;margin-right:4px;" />`;
+      if (f.sb) html += `<details style="margin-top:4px;"><summary style="font-size:12px;color:#94a3b8;cursor:pointer;">Request Body</summary><textarea id="fb-${idx}" style="width:100%;min-height:120px;background:#0f172a;border:1px solid #334155;border-radius:4px;padding:8px;color:#e2e8f0;font-size:12px;font-family:Consolas,monospace;margin-top:4px;resize:vertical;">${JSON.stringify(f.sb,null,2)}</textarea></details>`;
       html += `</div>`;
     }
-    // Result area
-    html += `<div id="fr-${idx}" class="api-result" style="display:none; margin-top:6px; max-height:250px;"></div>`;
+    // Result area (hidden, with toggle)
+    html += `<div id="fr-${idx}" class="api-result" style="display:none; margin-top:6px; max-height:300px; position:relative; font-size:12px;"></div>`;
     html += `</div>`;
   });
   if (lastType) html += '</div>';
