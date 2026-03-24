@@ -3,12 +3,12 @@
 # 사용법: bash deploy.sh
 
 SERVER="trizadmin@192.168.1.55"
-REMOTE_DIR="/root"
+REMOTE_DIR="/root/omada_api_tester"
 ARCHIVE="omada_api_tester.tar.gz"
 
 echo "=== 1. 압축 ==="
 tar -czf "/tmp/$ARCHIVE" -C "$(dirname "$0")" \
-  server.js index.html public/ api/ vercel.json README.md
+  server.js index.html public/ api/ vercel.json README.md start.sh stop.sh restart.sh deploy.sh
 echo "Created: /tmp/$ARCHIVE"
 
 echo ""
@@ -18,8 +18,7 @@ echo "Sent to $SERVER:$REMOTE_DIR/$ARCHIVE"
 
 echo ""
 echo "=== 3. 원격 압축 해제 & 재시작 ==="
-ssh "$SERVER" "cd $REMOTE_DIR && tar -xzf $ARCHIVE && echo 'Extracted' && \
-  (pkill -f 'node server.js' 2>/dev/null; sleep 1; cd $REMOTE_DIR && nohup node server.js > /tmp/omada-tester.log 2>&1 & echo 'Server started on port 3000')"
+ssh "$SERVER" "cd $REMOTE_DIR && tar -xzf $ARCHIVE && rm -f $ARCHIVE && echo 'Extracted' && bash $REMOTE_DIR/restart.sh"
 
 echo ""
 echo "=== Done! ==="
