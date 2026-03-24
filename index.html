@@ -395,7 +395,8 @@ function resolvePath(p, overrides = {}) {
 // ── Run single API ──
 async function runApi(id) {
   const api = allApis().find(a => a.id === id);
-  if (!api || !S.accessToken) return;
+  if (!api) return;
+  if (!S.accessToken) { alert('Access Token이 없습니다.\n먼저 "Access Token" 버튼을 클릭하여 인증하세요.'); return; }
 
   const btn = document.querySelector(`#card-${id} .run-btn`);
   const result = el(`result-${id}`);
