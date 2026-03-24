@@ -80,6 +80,19 @@
   .ap-select { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
   .ap-select label { font-size: 11px; color: #94a3b8; white-space: nowrap; }
   .ap-select select { flex: 1; }
+  .curl-btn { padding: 4px 10px; border: none; border-radius: 5px; background: #334155; color: #94a3b8; font-size: 11px; font-weight: 600; cursor: pointer; }
+  .curl-btn:hover { background: #475569; color: #e2e8f0; }
+  .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center; }
+  .modal-overlay.show { display: flex; }
+  .modal { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 24px; max-width: 800px; width: 90%; max-height: 80vh; overflow-y: auto; }
+  .modal h3 { font-size: 15px; color: #38bdf8; margin-bottom: 12px; }
+  .modal pre { background: #0f172a; border-radius: 8px; padding: 16px; font-family: 'Consolas', monospace; font-size: 12px; white-space: pre-wrap; word-break: break-all; line-height: 1.6; color: #34d399; }
+  .modal .btn-row { margin-top: 14px; display: flex; gap: 8px; }
+  .modal .copy-btn { padding: 6px 16px; border: none; border-radius: 6px; background: #0ea5e9; color: white; font-size: 12px; font-weight: 600; cursor: pointer; }
+  .modal .copy-btn:hover { background: #0284c7; }
+  .modal .close-btn { padding: 6px 16px; border: none; border-radius: 6px; background: #475569; color: #e2e8f0; font-size: 12px; font-weight: 600; cursor: pointer; }
+  .modal .close-btn:hover { background: #64748b; }
+  .modal .copied { color: #34d399; font-size: 12px; margin-left: 8px; }
 </style>
 </head>
 <body>
@@ -124,6 +137,19 @@
 
   <!-- Sections -->
   <div id="sections"></div>
+</div>
+
+<!-- cURL Modal -->
+<div class="modal-overlay" id="curlModal" onclick="if(event.target===this)closeCurl()">
+  <div class="modal">
+    <h3 id="curlTitle">cURL Command</h3>
+    <pre id="curlContent"></pre>
+    <div class="btn-row">
+      <button class="copy-btn" onclick="copyCurl()">Copy</button>
+      <button class="close-btn" onclick="closeCurl()">Close</button>
+      <span class="copied" id="copiedMsg" style="display:none">Copied!</span>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -348,6 +374,50 @@ function highlight(json) {
   });
 }
 
+// ── cURL ──
+function buildCurl(apiId) {
+  const api = allApis().find(a => a.id === apiId);
+  if (!api) return '';
+
+  const overrides = {};
+  if (api.params) api.params.forEach(p => { const v = el(`param-${apiId}-${p.k}`); if (v) overrides[p.k] = v.value || `{${p.k}}`; });
+  if (api.useApMac) { const v = el(`param-${apiId}-apMac`); if (v) overrides.apMac = v.value || val('apMac'); }
+
+  const url = val('baseUrl') + resolvePath(api.p, overrides);
+  let cmd = `curl -k -X ${api.m} "${url}"`;
+  if (S.accessToken) cmd += ` \\\n  -H "Authorization: AccessToken=${S.accessToken}"`;
+  cmd += ` \\\n  -H "Content-Type: application/json"`;
+
+  if (api.body) {
+    const ta = el(`reqbody-${apiId}`);
+    if (ta && ta.value.trim()) {
+      try {
+        const pretty = JSON.stringify(JSON.parse(ta.value), null, 2);
+        cmd += ` \\\n  -d '${pretty}'`;
+      } catch { cmd += ` \\\n  -d '${ta.value.trim()}'`; }
+    }
+  }
+  return cmd;
+}
+
+function showCurl(apiId) {
+  const api = allApis().find(a => a.id === apiId);
+  el('curlTitle').textContent = `cURL - ${api ? api.name : apiId}`;
+  el('curlContent').textContent = buildCurl(apiId);
+  el('curlModal').classList.add('show');
+  el('copiedMsg').style.display = 'none';
+}
+
+function closeCurl() { el('curlModal').classList.remove('show'); }
+
+function copyCurl() {
+  const text = el('curlContent').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    el('copiedMsg').style.display = 'inline';
+    setTimeout(() => el('copiedMsg').style.display = 'none', 2000);
+  });
+}
+
 function toggleBody(id) { el(`body-${id}`).classList.toggle('open'); }
 function switchTab(tab) {
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
@@ -383,6 +453,7 @@ function render() {
             <span class="method-badge ${api.m}">${api.m}</span>
             <span class="name">${api.name}</span>
             <span class="ep">${api.p}</span>
+            <button class="curl-btn" onclick="event.stopPropagation();showCurl('${api.id}')">cURL</button>
             <button class="run-btn ${isDanger?'danger':''}" onclick="event.stopPropagation();runApi('${api.id}')">${isDanger?'Run':'Run'}</button>
           </div>
           <div class="api-body" id="body-${api.id}">
