@@ -53,6 +53,7 @@
   .method-badge.GET { background: #064e3b; color: #34d399; }
   .method-badge.POST { background: #7c2d12; color: #fb923c; }
   .method-badge.PATCH { background: #4c1d95; color: #c084fc; }
+  .method-badge.DELETE { background: #7f1d1d; color: #fca5a5; }
   .api-header .name { font-size: 12px; font-weight: 600; flex: 1; }
   .api-header .ep { font-size: 10px; color: #475569; font-family: 'Consolas', monospace; max-width: 400px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .run-btn { padding: 4px 12px; border: none; border-radius: 5px; background: #0ea5e9; color: white; font-size: 11px; font-weight: 600; cursor: pointer; min-width: 44px; }
@@ -269,28 +270,81 @@ const APIS = [
     { id:'uplink', name:'Wired Uplink', desc:'Uplink port info (rate, duplex, bytes, packets)', m:'GET', p:'/openapi/v1/{oid}/sites/{sid}/aps/{apMac}/wired-uplink', useApMac:true },
     { id:'downlink', name:'Wired Downlink', desc:'Downlink port info', m:'GET', p:'/openapi/v1/{oid}/sites/{sid}/aps/{apMac}/wired-downlink', useApMac:true },
   ]},
-  { tab: 'Radio', title: 'Radio (Channel / BW / TxPower / Traffic)', items: [
-    { id:'radios', name:'Radio Status', desc:'2.4G/5G/6G channel, bandwidth, txPower, traffic stats', m:'GET', p:'/openapi/v1/{oid}/sites/{sid}/aps/{apMac}/radios', useApMac:true },
-    { id:'radio-cfg', name:'Radio Config', desc:'Radio enable, channelWidth, channel, txPower, wirelessMode', m:'GET', p:'/openapi/v1/{oid}/sites/{sid}/aps/{apMac}/radio-config', useApMac:true },
-    { id:'radio-set', name:'Radio Config Set', desc:'Change radio settings (enable, channel, BW, txPower)', m:'PATCH', p:'/openapi/v1/{oid}/sites/{sid}/aps/{apMac}/radio-config', useApMac:true,
+  { tab: 'Radio', title: 'Radio', items: [
+    { id:'radios', name:'Radio Status', desc:'2.4G/5G/6G: actualChannel, maxTxRate, txPower, bandWidth, rdMode, txUtil, rxUtil, interUtil + radioTraffic per band', m:'GET', p:'/openapi/v1/{oid}/sites/{sid}/aps/{apMac}/radios', useApMac:true },
+    { id:'radio-cfg', name:'Radio Config', desc:'radioEnable, channelWidth, channel, txPower, txPowerLevel, wirelessMode, channelLimitEnable per band', m:'GET', p:'/openapi/v1/{oid}/sites/{sid}/aps/{apMac}/radio-config', useApMac:true },
+    { id:'radio-2g-on', name:'2.4G Radio ON', desc:'Enable 2.4G radio', m:'PATCH', p:'/openapi/v1/{oid}/sites/{sid}/aps/{apMac}/radio-config', useApMac:true,
+      body: true, bodyDefault: JSON.stringify({ radioSetting2g: { radioEnable: true } }, null, 2)
+    },
+    { id:'radio-2g-off', name:'2.4G Radio OFF', desc:'Disable 2.4G radio', m:'PATCH', p:'/openapi/v1/{oid}/sites/{sid}/aps/{apMac}/radio-config', useApMac:true,
+      body: true, bodyDefault: JSON.stringify({ radioSetting2g: { radioEnable: false } }, null, 2)
+    },
+    { id:'radio-5g-on', name:'5G Radio ON', desc:'Enable 5G radio', m:'PATCH', p:'/openapi/v1/{oid}/sites/{sid}/aps/{apMac}/radio-config', useApMac:true,
+      body: true, bodyDefault: JSON.stringify({ radioSetting5g: { radioEnable: true } }, null, 2)
+    },
+    { id:'radio-5g-off', name:'5G Radio OFF', desc:'Disable 5G radio', m:'PATCH', p:'/openapi/v1/{oid}/sites/{sid}/aps/{apMac}/radio-config', useApMac:true,
+      body: true, bodyDefault: JSON.stringify({ radioSetting5g: { radioEnable: false } }, null, 2)
+    },
+    { id:'radio-ch', name:'Channel Set', desc:'channelWidth: "1"=20MHz, "2"=auto20/40, "4"=40MHz, "6"=80/160MHz | channel: "0"=auto, "1","6","11"... | txPower: 7~28 dBm', m:'PATCH', p:'/openapi/v1/{oid}/sites/{sid}/aps/{apMac}/radio-config', useApMac:true,
       body: true, bodyDefault: JSON.stringify({
-        radioSetting2g: { radioEnable: true, channelWidth: "4", channel: "0", txPower: 26 },
-        radioSetting5g: { radioEnable: true, channelWidth: "6", channel: "0", txPower: 27 }
+        radioSetting2g: { channelWidth: "4", channel: "0", txPower: 26 },
+        radioSetting5g: { channelWidth: "6", channel: "0", txPower: 27 }
+      }, null, 2)
+    },
+    { id:'radio-full', name:'Radio Full Config Set', desc:'Full radio config for all bands (2.4G, 5G, 6G)', m:'PATCH', p:'/openapi/v1/{oid}/sites/{sid}/aps/{apMac}/radio-config', useApMac:true,
+      body: true, bodyDefault: JSON.stringify({
+        radioSetting2g: { radioEnable: true, channelWidth: "4", channel: "0", txPower: 26, wirelessMode: -2 },
+        radioSetting5g: { radioEnable: true, channelWidth: "6", channel: "0", txPower: 27, channelLimitEnable: false, wirelessMode: -2 },
+        radioSetting6g: { radioEnable: true, channelWidth: "8", channel: "0", txPower: 28, channelLimitEnable: false, wirelessMode: -2 }
       }, null, 2)
     },
   ]},
   { tab: 'SSID', title: 'SSID / WLAN', items: [
-    { id:'ssids', name:'SSID List', desc:'SSIDs in WLAN group (name, band, security, broadcast)', m:'GET', p:'/openapi/v1/{oid}/sites/{sid}/wireless-network/wlans/{wlanId}/ssids?pageSize=100&page=1' },
-    { id:'ssid-set', name:'SSID Config Set', desc:'Change SSID name, security, password, broadcast', m:'PATCH', p:'/openapi/v1/{oid}/sites/{sid}/wireless-network/wlans/{wlanId}/ssids/{ssidId}/update-basic-config',
-      params:[{k:'ssidId',l:'SSID ID',ph:'from SSID List response'}],
-      body: true, bodyDefault: JSON.stringify({ name: "MySSID", security: 3, password: "mypassword", broadcast: true }, null, 2)
-    },
-  ]},
-  { tab: 'System', title: 'System / Beacon', items: [
-    { id:'beacon', name:'Beacon / Airtime', desc:'Beacon interval, DTIM, RTS, Fragmentation, Airtime Fairness', m:'GET', p:'/openapi/v1/{oid}/sites/{sid}/beacon-control' },
-    { id:'beacon-set', name:'Beacon Config Set', desc:'Change beacon/airtime settings (site-wide)', m:'PATCH', p:'/openapi/v1/{oid}/sites/{sid}/beacon-control',
+    { id:'wlans', name:'WLAN Group List', desc:'WLAN groups (wlanId, name, primary)', m:'GET', p:'/openapi/v1/{oid}/sites/{sid}/wireless-network/wlans' },
+    { id:'ssids', name:'SSID List', desc:'SSIDs in WLAN group (ssidId, name, band, security, broadcast, vlanEnable)', m:'GET', p:'/openapi/v1/{oid}/sites/{sid}/wireless-network/wlans/{wlanId}/ssids?pageSize=100&page=1' },
+    { id:'ssid-create', name:'SSID Create', desc:'Create new SSID. band: 1=2.4G, 2=5G, 3=6G | security: 0=Open, 3=WPA2-PSK, 4=WPA2/WPA3-PSK, 6=WPA3-SAE | pmfMode: 1=optional, 2=required, 3=disabled', m:'POST', p:'/openapi/v1/{oid}/sites/{sid}/wireless-network/wlans/{wlanId}/ssids',
       body: true, bodyDefault: JSON.stringify({
-        beaconControl: { dtimPeriod2g: 1, rtsThreshold2g: 2347, fragmentationThreshold2g: 2346, dtimPeriod5g: 1, rtsThreshold5g: 2347, fragmentationThreshold5g: 2346 },
+        name: "new-ssid",
+        band: 1,
+        security: 3,
+        psk: "password123",
+        broadcast: true,
+        mloEnable: false,
+        pmfMode: 1,
+        hidePwd: true,
+        vlanEnable: false,
+        guestNetEnable: false,
+        deviceType: 0,
+        enable11r: false
+      }, null, 2)
+    },
+    { id:'ssid-update', name:'SSID Update', desc:'Update SSID: name, security(0/3/4/6), psk, broadcast(show/hide), pmfMode, vlanEnable, vlanId, guestNetEnable', m:'PATCH', p:'/openapi/v1/{oid}/sites/{sid}/wireless-network/wlans/{wlanId}/ssids/{ssidId}/update-basic-config',
+      params:[{k:'ssidId',l:'SSID ID',ph:'from SSID List response'}],
+      body: true, bodyDefault: JSON.stringify({
+        name: "updated-ssid",
+        security: 3,
+        psk: "newpassword123",
+        broadcast: true,
+        pmfMode: 1,
+        hidePwd: true,
+        vlanEnable: false,
+        guestNetEnable: false
+      }, null, 2)
+    },
+    { id:'ssid-delete', name:'SSID Delete', desc:'Delete SSID by ssidId', m:'DELETE', p:'/openapi/v1/{oid}/sites/{sid}/wireless-network/wlans/{wlanId}/ssids/{ssidId}',
+      params:[{k:'ssidId',l:'SSID ID',ph:'from SSID List response'}], danger:true
+    },
+    { id:'ssid-override', name:'AP SSID Override', desc:'Override SSID settings per AP (from device detail: ssidOverrides)', m:'GET', p:'/openapi/v1/{oid}/sites/{sid}/aps/{apMac}', useApMac:true },
+  ]},
+  { tab: 'System', title: 'System / Beacon / Advanced', items: [
+    { id:'beacon', name:'Beacon / Airtime Config', desc:'beaconIntvMode, dtimPeriod, rtsThreshold, fragmentationThreshold per band + airtimeFairness enable per band', m:'GET', p:'/openapi/v1/{oid}/sites/{sid}/beacon-control' },
+    { id:'beacon-set', name:'Beacon Config Set', desc:'Change beacon interval, DTIM, RTS threshold, fragmentation threshold, airtime fairness (site-wide)', m:'PATCH', p:'/openapi/v1/{oid}/sites/{sid}/beacon-control',
+      body: true, bodyDefault: JSON.stringify({
+        beaconControl: {
+          beaconIntvMode2g: 0, dtimPeriod2g: 1, rtsThreshold2g: 2347, fragmentationThreshold2g: 2346,
+          beaconIntvMode5g: 0, dtimPeriod5g: 1, rtsThreshold5g: 2347, fragmentationThreshold5g: 2346,
+          beaconInterval6g: 100, beaconIntvMode6g: 0, dtimPeriod6g: 1, rtsThreshold6g: 2347, fragmentationThreshold6g: 2346
+        },
         airtimeFairness: { enable2g: false, enable5g: false, enable6g: false }
       }, null, 2)
     },
