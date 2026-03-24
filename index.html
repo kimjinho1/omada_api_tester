@@ -299,8 +299,29 @@ const APIS = [
       }, null, 2)
     },
   ]},
-  { tab: 'SSID', title: 'SSID / WLAN', items: [
-    { id:'wlans', name:'WLAN Group List', desc:'WLAN groups (wlanId, name, primary)', m:'GET', p:'/openapi/v1/{oid}/sites/{sid}/wireless-network/wlans' },
+  { tab: 'SSID', title: 'SSID / WLAN Group / AP Override', items: [
+    { id:'wlans', name:'WLAN Group List', desc:'WLAN groups (wlanId, name, primary). SSID는 WLAN Group 안에 생성하고, WLAN Group을 AP에 적용하는 구조', m:'GET', p:'/openapi/v1/{oid}/sites/{sid}/wireless-network/wlans' },
+    { id:'wlan-create', name:'WLAN Group Create', desc:'새 WLAN Group 생성', m:'POST', p:'/openapi/v1/{oid}/sites/{sid}/wireless-network/wlans',
+      body: true, bodyDefault: JSON.stringify({ name: "my-wlan-group" }, null, 2)
+    },
+    { id:'wlan-update', name:'WLAN Group Update', desc:'WLAN Group 이름 변경', m:'PATCH', p:'/openapi/v1/{oid}/sites/{sid}/wireless-network/wlans/{wlanId}',
+      body: true, bodyDefault: JSON.stringify({ name: "renamed-group" }, null, 2)
+    },
+    { id:'wlan-delete', name:'WLAN Group Delete', desc:'WLAN Group 삭제 (내부 SSID 포함 삭제)', m:'DELETE', p:'/openapi/v1/{oid}/sites/{sid}/wireless-network/wlans/{wlanId}', danger: true
+    },
+    { id:'ap-override-get', name:'AP WLAN Override (GET)', desc:'AP에 적용된 WLAN/SSID Override 설정 조회. SSID별 이름/비밀번호/밴드/보안/VLAN/활성화 여부 확인', m:'GET', p:'/openapi/v1/{oid}/sites/{sid}/aps/{apMac}/override', useApMac:true },
+    { id:'ap-override-set', name:'AP WLAN Override (SET)', desc:'AP별 SSID 이름/비밀번호/활성화 개별 Override. ssidId는 AP Override GET 응답의 ssidId 사용', m:'PATCH', p:'/openapi/v1/{oid}/sites/{sid}/aps/{apMac}/override', useApMac:true,
+      body: true, bodyDefault: JSON.stringify({
+        ssidOverrides: [{
+          ssidId: 0,
+          overrideSsidEnable: true,
+          overrideVlanEnable: false,
+          ssidEnable: true,
+          overrideSsidName: "AP-specific-name",
+          overrideSsidPassword: "ap-password123"
+        }]
+      }, null, 2)
+    },
     { id:'ssids', name:'SSID List', desc:'SSIDs in WLAN group (ssidId, name, band, security, broadcast, vlanEnable)', m:'GET', p:'/openapi/v1/{oid}/sites/{sid}/wireless-network/wlans/{wlanId}/ssids?pageSize=100&page=1' },
     { id:'ssid-detail', name:'SSID Detail', desc:'Full SSID detail (pskSetting, rateLimit, wlanSchedule, macFilter, multiCast, etc)', m:'GET', p:'/openapi/v1/{oid}/sites/{sid}/wireless-network/wlans/{wlanId}/ssids/{ssidId}',
       params:[{k:'ssidId',l:'SSID ID',ph:'from SSID List response'}]
