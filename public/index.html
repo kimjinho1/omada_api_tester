@@ -133,6 +133,28 @@
     <div class="token-info" id="tokenInfo"></div>
   </div>
 
+  <!-- View Switch -->
+  <div style="display:flex; gap:6px; margin-bottom:16px;">
+    <button class="btn btn-primary" id="btnViewApi" onclick="switchView('api')" style="font-size:13px;">API Tester</button>
+    <button class="btn btn-secondary" id="btnViewFunc" onclick="switchView('func')" style="font-size:13px;">Feature Checklist</button>
+  </div>
+
+  <!-- Feature Checklist View -->
+  <div id="funcView" style="display:none;">
+    <div class="config" style="padding:16px; margin-bottom:12px;">
+      <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+        <span style="font-size:12px; color:#94a3b8;">Filter:</span>
+        <button class="btn btn-secondary" style="padding:4px 12px; font-size:11px;" onclick="filterFunc('all')">All</button>
+        <button class="btn btn-secondary" style="padding:4px 12px; font-size:11px; background:#064e3b; color:#34d399;" onclick="filterFunc('O')">O Supported</button>
+        <button class="btn btn-secondary" style="padding:4px 12px; font-size:11px; background:#7f1d1d; color:#fca5a5;" onclick="filterFunc('X')">X Not Supported</button>
+      </div>
+    </div>
+    <div id="funcContent"></div>
+  </div>
+
+  <!-- API Tester View -->
+  <div id="apiView">
+
   <!-- Reference -->
   <div class="config" id="refPanel" style="display:none; font-size:11px; line-height:1.7;">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
@@ -193,6 +215,7 @@
 
   <!-- Sections -->
   <div id="sections"></div>
+  </div><!-- /apiView -->
 </div>
 
 <!-- cURL Modal -->
@@ -654,7 +677,131 @@ autoDetect = async function() { await _ad(); syncApSelects(); };
 
 el('apMac').addEventListener('change', syncApSelects);
 
+// ── Feature Checklist (from Excel) ──
+const FEATURES = [
+  { type:'관제', cat:'단말', sub:'목록', feat:'단말 목록 조회', sup:'O', api:'GET .../clients?pageSize=100&page=1', field:'mac, ip, ssid, rssi, snr, channel, rxRate, txRate, trafficDown, trafficUp, uptime' },
+  { type:'관제', cat:'단말', sub:'상세정보', feat:'장비 포트명', sup:'O', api:'GET .../aps/{apMac}/wired-uplink', field:'wiredUplink.rate (uplink/downlink 구분)' },
+  { type:'관제', cat:'단말', sub:'상세정보', feat:'장비 포트 번호', sup:'O', api:'GET .../aps/{apMac}/wired-uplink', field:'개별 포트 번호 없음, uplink/downlink 구분' },
+  { type:'관제', cat:'단말', sub:'상세정보', feat:'연결시간', sup:'O', api:'GET .../clients', field:'result.data[].uptime (초)' },
+  { type:'관제', cat:'단말', sub:'상세정보', feat:'단말이 연결된 SSID 조회', sup:'O', api:'GET .../clients', field:'result.data[].ssid' },
+  { type:'관제', cat:'단말', sub:'트래픽', feat:'단말 트래픽', sup:'O', api:'GET .../clients', field:'trafficDown, trafficUp (bytes)' },
+  { type:'관제', cat:'장비', sub:'상세정보', feat:'장비 시리얼', sup:'O', api:'GET .../devices?pageSize=100&page=1', field:'result.data[].mac (시리얼 미제공, MAC 식별)' },
+  { type:'관제', cat:'장비', sub:'상세정보', feat:'장비 SW 버전', sup:'O', api:'GET .../devices', field:'firmwareVersion' },
+  { type:'관제', cat:'장비', sub:'상세정보', feat:'장비 업타임', sup:'O', api:'GET .../devices', field:'uptime 예: "19h 9m 4s"' },
+  { type:'관제', cat:'장비', sub:'포트 정보', feat:'포트별 번호', sup:'O', api:'GET .../aps/{apMac}/wired-uplink\nGET .../aps/{apMac}/wired-downlink', field:'uplink/downlink 구분' },
+  { type:'관제', cat:'장비', sub:'포트 정보', feat:'포트별 상태', sup:'O', api:'GET .../aps/{apMac}/wired-uplink', field:'rate, duplex' },
+  { type:'관제', cat:'장비', sub:'포트 정보', feat:'포트별 타입', sup:'X', api:'', field:'포트 타입 정보 없음' },
+  { type:'관제', cat:'장비', sub:'포트 정보', feat:'포트 속도', sup:'O', api:'GET .../aps/{apMac}/wired-uplink', field:'rate 예: "1000" (Mbps)' },
+  { type:'관제', cat:'장비', sub:'포트 정보', feat:'포트별 RX 속도', sup:'O', api:'GET .../aps/{apMac}/wired-uplink', field:'downBytes (RX)' },
+  { type:'관제', cat:'장비', sub:'포트 정보', feat:'포트별 TX 속도', sup:'O', api:'GET .../aps/{apMac}/wired-uplink', field:'upBytes (TX)' },
+  { type:'관제', cat:'장비', sub:'포트 정보', feat:'포트별 RX 트래픽 사용량', sup:'O', api:'GET .../aps/{apMac}/wired-uplink', field:'downBytes, downPackets' },
+  { type:'관제', cat:'장비', sub:'포트 정보', feat:'포트별 TX 트래픽 사용량', sup:'O', api:'GET .../aps/{apMac}/wired-uplink', field:'upBytes, upPackets' },
+  { type:'관제', cat:'장비', sub:'네트워크 - 2.4G', feat:'채널 조회', sup:'O', api:'GET .../aps/{apMac}/radios', field:'wp2g.actualChannel 예: "1 / 2412MHz"' },
+  { type:'관제', cat:'장비', sub:'네트워크 - 2.4G', feat:'대역폭 조회', sup:'O', api:'GET .../aps/{apMac}/radios', field:'wp2g.bandWidth 예: "40MHz"' },
+  { type:'관제', cat:'장비', sub:'네트워크 - 2.4G', feat:'TX 파워 조회', sup:'O', api:'GET .../aps/{apMac}/radios', field:'wp2g.txPower 예: 26 (dBm)' },
+  { type:'관제', cat:'장비', sub:'네트워크 - 2.4G', feat:'연결 속도 조회', sup:'O', api:'GET .../aps/{apMac}/radios', field:'wp2g.maxTxRate 예: 573 (Mbps)' },
+  { type:'관제', cat:'장비', sub:'네트워크 - 2.4G', feat:'SSID 목록 - SSID', sup:'O', api:'GET .../wlans/{wlanId}/ssids', field:'name, band=1(2.4G)' },
+  { type:'관제', cat:'장비', sub:'네트워크 - 2.4G', feat:'SSID 목록 - 인증 방식', sup:'O', api:'GET .../ssids/{ssidId}', field:'security, pskSetting.versionPsk' },
+  { type:'관제', cat:'장비', sub:'네트워크 - 2.4G', feat:'SSID 목록 - 암호화 방식', sup:'O', api:'GET .../ssids/{ssidId}', field:'pskSetting.encryptionPsk' },
+  { type:'관제', cat:'장비', sub:'네트워크 - 2.4G', feat:'SSID 목록 - BSSID', sup:'X', api:'', field:'BSSID 직접 조회 API 없음' },
+  { type:'관제', cat:'장비', sub:'네트워크 - 5G', feat:'채널 조회', sup:'O', api:'GET .../aps/{apMac}/radios', field:'wp5g.actualChannel 예: "44 / 5220MHz"' },
+  { type:'관제', cat:'장비', sub:'네트워크 - 5G', feat:'대역폭 조회', sup:'O', api:'GET .../aps/{apMac}/radios', field:'wp5g.bandWidth 예: "160MHz"' },
+  { type:'관제', cat:'장비', sub:'네트워크 - 5G', feat:'TX 파워 조회', sup:'O', api:'GET .../aps/{apMac}/radios', field:'wp5g.txPower' },
+  { type:'관제', cat:'장비', sub:'네트워크 - 5G', feat:'연결 속도 조회', sup:'O', api:'GET .../aps/{apMac}/radios', field:'wp5g.maxTxRate' },
+  { type:'관제', cat:'장비', sub:'네트워크 - 5G', feat:'SSID 목록 - SSID', sup:'O', api:'GET .../wlans/{wlanId}/ssids', field:'band=2(5G)' },
+  { type:'관제', cat:'장비', sub:'네트워크 - 5G', feat:'SSID 목록 - 인증 방식', sup:'O', api:'GET .../ssids/{ssidId}', field:'pskSetting.versionPsk' },
+  { type:'관제', cat:'장비', sub:'네트워크 - 5G', feat:'SSID 목록 - 암호화 방식', sup:'O', api:'GET .../ssids/{ssidId}', field:'pskSetting.encryptionPsk' },
+  { type:'관제', cat:'장비', sub:'네트워크 - 5G', feat:'SSID 목록 - BSSID', sup:'X', api:'', field:'BSSID 직접 조회 API 없음' },
+  { type:'관제', cat:'장비', sub:'시스템', feat:'CPU 사용량', sup:'O', api:'GET .../aps/{apMac}', field:'cpuUtil (%)' },
+  { type:'관제', cat:'장비', sub:'시스템', feat:'메모리 사용량', sup:'O', api:'GET .../aps/{apMac}', field:'memUtil (%)' },
+  { type:'관제', cat:'장비', sub:'시스템', feat:'온도 상태', sup:'X', api:'', field:'OpenAPI 미제공' },
+  { type:'관제', cat:'장비', sub:'시스템', feat:'디스크 사용량', sup:'X', api:'', field:'OpenAPI 미제공' },
+  { type:'관제', cat:'장비', sub:'시스템', feat:'프로세스 별 CPU 사용량', sup:'X', api:'', field:'총 cpuUtil만 제공' },
+  { type:'관제', cat:'장비', sub:'시스템', feat:'프로세스 별 메모리 사용량', sup:'X', api:'', field:'총 memUtil만 제공' },
+  { type:'관제', cat:'장비', sub:'무선', feat:'Radio Scan start', sup:'X', api:'POST /v2/.../start-rf-scan', field:'모델별 미지원' },
+  { type:'관제', cat:'장비', sub:'무선', feat:'Radio Scan 결과 조회', sup:'O', api:'GET /v2/.../rf-scan-result', field:'time, status, status2g/5g/6g' },
+  { type:'관제', cat:'장비', sub:'변경 이력 관리', feat:'Running Config 조회', sup:'O', api:'GET .../aps/{apMac}/radios\nGET .../aps/{apMac}/radio-config', field:'radios + radio-config 조합' },
+  { type:'설정', cat:'단말', sub:'목록', feat:'단말 허용', sup:'O', api:'POST .../clients/{clientMac}/unblock', field:'{"errorCode":0,"msg":"Success."}' },
+  { type:'설정', cat:'단말', sub:'목록', feat:'단말 차단', sup:'O', api:'POST .../clients/{clientMac}/block', field:'{"errorCode":0,"msg":"Success."}' },
+  { type:'설정', cat:'장비', sub:'상세정보', feat:'장비 리부팅', sup:'O', api:'POST .../devices/{deviceMac}/reboot', field:'{"errorCode":0,"msg":"Success."}' },
+  { type:'설정', cat:'장비', sub:'상세정보', feat:'업그레이드', sup:'X', api:'', field:'OpenAPI 미지원' },
+  { type:'설정', cat:'무선설정', sub:'네트워크', feat:'모드 설정 (NAT, BRIDGE)', sup:'X', api:'', field:'OpenAPI 미지원' },
+  { type:'설정', cat:'무선설정', sub:'공통 - 무선(2.4G, 5G)', feat:'무선 사용 여부 설정', sup:'O', api:'PATCH .../aps/{apMac}/radio-config\n{"radioSetting2g":{"radioEnable":true/false}}', field:'Success' },
+  { type:'설정', cat:'무선설정', sub:'공통 - 무선(2.4G, 5G)', feat:'채널 설정', sup:'O', api:'PATCH .../radio-config\n{"radioSetting2g":{"channel":"6"}} // "0"=auto', field:'Success' },
+  { type:'설정', cat:'무선설정', sub:'공통 - 무선(2.4G, 5G)', feat:'대역폭 설정', sup:'O', api:'PATCH .../radio-config\n{"radioSetting2g":{"channelWidth":"4"}} // "1"=20,"4"=40,"6"=80/160', field:'Success' },
+  { type:'설정', cat:'무선설정', sub:'공통 - 무선(2.4G, 5G)', feat:'채널목록 설정', sup:'O', api:'PATCH .../radio-config\n{"radioSetting2g":{"channel":"0"}} // auto', field:'auto 모드로 설정' },
+  { type:'설정', cat:'무선설정', sub:'공통 - 무선(2.4G, 5G)', feat:'Tx 파워 설정', sup:'O', api:'PATCH .../radio-config\n{"radioSetting2g":{"txPower":20}}', field:'Success (실제 변경 확인됨)' },
+  { type:'설정', cat:'무선설정', sub:'공통 - 무선(2.4G, 5G)', feat:'Kickout RSSI 사용 여부 설정', sup:'O', api:'GET/PATCH .../beacon-control', field:'rssiSetting은 AP detail에서 조회' },
+  { type:'설정', cat:'무선설정', sub:'공통 - 무선(2.4G, 5G)', feat:'고급 - Fragmentation 설정', sup:'O', api:'PATCH .../beacon-control\n{"beaconControl":{"fragmentationThreshold2g":2346}}', field:'Success' },
+  { type:'설정', cat:'무선설정', sub:'공통 - 무선(2.4G, 5G)', feat:'고급 - RTS Threshold 설정', sup:'O', api:'PATCH .../beacon-control\n{"beaconControl":{"rtsThreshold2g":2347}}', field:'Success' },
+  { type:'설정', cat:'무선설정', sub:'공통 - 무선(2.4G, 5G)', feat:'고급 - DTIM 간격 설정', sup:'O', api:'PATCH .../beacon-control\n{"beaconControl":{"dtimPeriod2g":1}}', field:'Success' },
+  { type:'설정', cat:'무선설정', sub:'공통 - 무선(2.4G, 5G)', feat:'고급 - Beacon 간격 설정', sup:'O', api:'PATCH .../beacon-control\n{"beaconControl":{"beaconIntvMode2g":0}}', field:'Success' },
+  { type:'설정', cat:'무선설정', sub:'공통 - 무선(2.4G, 5G)', feat:'고급 - Preamble 방식 설정', sup:'X', api:'', field:'OpenAPI 미지원' },
+  { type:'설정', cat:'무선설정', sub:'공통 - 무선(2.4G, 5G)', feat:'고급 - 단말갯수 제한 설정', sup:'X', api:'', field:'OpenAPI 미지원' },
+  { type:'설정', cat:'무선설정', sub:'공통 - 무선(2.4G, 5G)', feat:'고급 - 무선 최적화 모드 설정', sup:'X', api:'', field:'OpenAPI 미지원' },
+  { type:'설정', cat:'무선설정', sub:'공통 - 무선(2.4G, 5G)', feat:'고급 - Beamforming tx 설정', sup:'X', api:'', field:'OpenAPI 미지원' },
+  { type:'설정', cat:'무선설정', sub:'공통 - 무선(2.4G, 5G)', feat:'고급 - Beamforming rx 설정', sup:'X', api:'', field:'OpenAPI 미지원' },
+  { type:'설정', cat:'무선설정', sub:'공통 - 무선(2.4G, 5G)', feat:'SSID - SSID 명 설정', sup:'O', api:'PATCH .../ssids/{ssidId}/update-basic-config\n{"name":"new-name",...}', field:'Success' },
+  { type:'설정', cat:'무선설정', sub:'공통 - 무선(2.4G, 5G)', feat:'SSID - SSID 사용 여부 설정', sup:'O', api:'POST .../ssids (생성)\nDELETE .../ssids/{ssidId} (삭제)', field:'SSID 생성/삭제로 제어' },
+  { type:'설정', cat:'무선설정', sub:'공통 - 무선(2.4G, 5G)', feat:'SSID - 인증 방식 설정', sup:'O', api:'PATCH .../update-basic-config\n{"security":3,"pskSetting":{"versionPsk":2,...}}', field:'0=Open, 3=WPA-Personal' },
+  { type:'설정', cat:'무선설정', sub:'공통 - 무선(2.4G, 5G)', feat:'SSID - 암호화 방식 설정', sup:'O', api:'PATCH .../update-basic-config\n{"pskSetting":{"encryptionPsk":1}}', field:'1=Auto, 3=AES' },
+  { type:'설정', cat:'무선설정', sub:'공통 - 무선(2.4G, 5G)', feat:'SSID - 암호화 비밀번호 설정', sup:'O', api:'PATCH .../update-basic-config\n{"pskSetting":{"securityKey":"pw"}}', field:'8-63자 ASCII' },
+  { type:'설정', cat:'무선설정', sub:'공통 - 무선(2.4G, 5G)', feat:'SSID - 숨김 여부 설정', sup:'O', api:'PATCH .../update-basic-config\n{"broadcast":false}', field:'true=표시, false=숨김' },
+  { type:'설정', cat:'무선설정', sub:'공통 - 무선(2.4G, 5G)', feat:'SSID - 단말간 통신 단절', sup:'O', api:'POST .../acls/eap-acls', field:'ACL로 제어' },
+  { type:'설정', cat:'무선설정', sub:'공통 - 무선(2.4G, 5G)', feat:'SSID - WMM 사용 여부 설정', sup:'X', api:'', field:'OpenAPI 미지원' },
+  { type:'설정', cat:'무선설정', sub:'5G', feat:'DFS 사용 여부 설정', sup:'X', api:'', field:'OpenAPI 미지원' },
+  { type:'설정', cat:'무선설정', sub:'WMM', feat:'2.4GHz 설정', sup:'X', api:'', field:'OpenAPI 미지원' },
+  { type:'설정', cat:'무선설정', sub:'WMM', feat:'5GHz 설정', sup:'X', api:'', field:'OpenAPI 미지원' },
+];
+
+let funcFilter = 'all';
+function filterFunc(f) { funcFilter = f; renderFunc(); }
+
+function switchView(v) {
+  el('apiView').style.display = v === 'api' ? 'block' : 'none';
+  el('funcView').style.display = v === 'func' ? 'block' : 'none';
+  el('btnViewApi').className = `btn ${v==='api'?'btn-primary':'btn-secondary'}`;
+  el('btnViewFunc').className = `btn ${v==='func'?'btn-primary':'btn-secondary'}`;
+  if (v === 'func') renderFunc();
+}
+
+function renderFunc() {
+  const filtered = funcFilter === 'all' ? FEATURES : FEATURES.filter(f => f.sup === funcFilter);
+  let html = '';
+  let lastType = '', lastCat = '', lastSub = '';
+  const total = FEATURES.length, supported = FEATURES.filter(f=>f.sup==='O').length, notSup = FEATURES.filter(f=>f.sup==='X').length;
+  html += `<div style="margin-bottom:12px; font-size:12px; color:#94a3b8;">Total: <b style="color:#e2e8f0">${total}</b> | <span style="color:#34d399">O Supported: <b>${supported}</b></span> | <span style="color:#fca5a5">X Not Supported: <b>${notSup}</b></span></div>`;
+
+  filtered.forEach(f => {
+    if (f.type !== lastType) {
+      if (lastType) html += '</div>';
+      html += `<div style="background:#1e293b; border-radius:10px; border:1px solid #334155; padding:16px; margin-bottom:12px;">`;
+      html += `<div style="font-size:15px; font-weight:700; color:${f.type==='관제'?'#38bdf8':'#fb923c'}; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid #334155;">${f.type}</div>`;
+      lastType = f.type; lastCat = ''; lastSub = '';
+    }
+    if (f.cat !== lastCat) {
+      html += `<div style="font-size:13px; font-weight:600; color:#e2e8f0; margin:12px 0 6px; padding-left:4px;">${f.cat}</div>`;
+      lastCat = f.cat; lastSub = '';
+    }
+    if (f.sub !== lastSub) {
+      html += `<div style="font-size:11px; color:#64748b; margin:8px 0 4px; padding-left:16px; font-weight:600;">${f.sub}</div>`;
+      lastSub = f.sub;
+    }
+    const supColor = f.sup==='O' ? '#34d399' : f.sup==='X' ? '#fca5a5' : '#f59e0b';
+    const supBg = f.sup==='O' ? '#064e3b' : f.sup==='X' ? '#7f1d1d' : '#78350f';
+    html += `<div style="display:grid; grid-template-columns:30px 1fr 1.2fr 1.2fr; gap:8px; padding:5px 8px 5px 28px; font-size:11px; border-bottom:1px solid #1e293b; align-items:start;" class="func-row">`;
+    html += `<span style="background:${supBg}; color:${supColor}; padding:1px 6px; border-radius:3px; font-weight:700; text-align:center; font-size:10px;">${f.sup}</span>`;
+    html += `<span style="color:#e2e8f0;">${f.feat}</span>`;
+    html += `<span style="color:#94a3b8; font-family:Consolas,monospace; font-size:10px; white-space:pre-wrap;">${f.api||'-'}</span>`;
+    html += `<span style="color:#64748b; font-size:10px;">${f.field||''}</span>`;
+    html += `</div>`;
+  });
+  if (lastType) html += '</div>';
+  el('funcContent').innerHTML = html;
+}
+
 render();
+renderFunc();
 </script>
 </body>
 </html>
