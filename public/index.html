@@ -12,7 +12,7 @@
   .header .status { font-size: 13px; padding: 5px 12px; border-radius: 20px; }
   .status.connected { background: #064e3b; color: #34d399; }
   .status.disconnected { background: #7f1d1d; color: #fca5a5; }
-  .container { max-width: 1280px; margin: 0 auto; padding: 20px; }
+  .container { max-width: 960px; margin: 0 auto; padding: 20px; }
 
   /* Config */
   .config { background: #1e293b; border-radius: 10px; padding: 20px; margin-bottom: 16px; border: 1px solid #334155; }
@@ -809,7 +809,9 @@ async function runFeat(idx, mode) {
     const url = base + path;
     const resp = await proxy(url, method, authHeader(), body);
     const label = mode === 'set' ? '<b style="color:#fb923c">[SET Result]</b> ' : mode === 'verify' ? '<b style="color:#34d399">[VERIFY Result]</b> ' : '';
-    resultEl.innerHTML = `<span onclick="toggleFeatResult(${idx})" style="cursor:pointer;color:#64748b;font-size:10px;float:right;">[close]</span>` + label + highlight(JSON.stringify(resp, null, 2));
+    resultEl.innerHTML = label + highlight(JSON.stringify(resp, null, 2));
+    resultEl.style.cursor = 'pointer';
+    resultEl.onclick = () => { resultEl.style.display = 'none'; resultEl.onclick = null; };
   } catch (e) {
     resultEl.textContent = `Error: ${e.message}`;
     resultEl.classList.add('error');
