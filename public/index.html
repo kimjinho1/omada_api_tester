@@ -510,7 +510,9 @@ const APIS = [
   ]},
   { tab: 'RF Scan', title: 'RF Scan (v2 API)', items: [
     { id:'rf-result', name:'RF Scan Result', desc:'Last RF scan result (status per band)', m:'GET', p:'/openapi/v2/{oid}/sites/{sid}/aps/{apMac}/rf-scan-result', useApMac:true },
-    { id:'rf-start', name:'RF Scan Start', desc:'Start RF scanning (may not be supported on all models)', m:'POST', p:'/openapi/v2/{oid}/sites/{sid}/aps/{apMac}/start-rf-scan', useApMac:true, danger:true, noBody: true },
+    { id:'rf-start', name:'RF Scan Start', desc:'Start RF scanning (may not be supported on all models)', m:'POST', p:'/openapi/v2/{oid}/sites/{sid}/aps/{apMac}/start-rf-scan', useApMac:true, danger:true,
+      body: true, bodyDefault: JSON.stringify({}, null, 2)
+    },
   ]},
   { tab: 'ACL', title: 'ACL (Client Isolation)', items: [
     { id:'acl-list', name:'EAP ACL List', desc:'ACL rules for client isolation', m:'GET', p:'/openapi/v1/{oid}/sites/{sid}/acls/eap-acls?pageSize=100&page=1' },
@@ -569,7 +571,7 @@ async function runApi(id) {
       const url = val('baseUrl') + resolvePath(api.p, overrides);
       let reqBody = null;
       if (api.body) { const ta = el(`reqbody-${id}`); if (ta && ta.value.trim()) reqBody = JSON.parse(ta.value); }
-      if (!api.noBody && !reqBody && (api.m === 'POST' || api.m === 'PATCH')) reqBody = {};
+      if (!reqBody && (api.m === 'POST' || api.m === 'PATCH')) reqBody = {};
       resp = await proxy(url, api.m, authHeader(), reqBody);
     }
     result.innerHTML = highlight(JSON.stringify(resp, null, 2));
