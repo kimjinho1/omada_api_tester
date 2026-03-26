@@ -8,12 +8,14 @@ const PORT = 3000;
 function proxyRequest(targetUrl, method, headers, body) {
   return new Promise((resolve, reject) => {
     const url = new URL(targetUrl);
+    const hdrs = { ...headers };
+    if (body) hdrs['Content-Length'] = Buffer.byteLength(body);
     const options = {
       hostname: url.hostname,
       port: url.port || 443,
       path: url.pathname + url.search,
       method: method,
-      headers: headers,
+      headers: hdrs,
       rejectUnauthorized: false,
     };
 
