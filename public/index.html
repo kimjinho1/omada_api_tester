@@ -131,6 +131,10 @@
       <button class="btn btn-warn" id="btnRunAll" onclick="runAllGET()" disabled>Run All GET</button>
     </div>
     <div class="token-info" id="tokenInfo"></div>
+    <div id="tokenCopyRow" style="display:none; margin-top:8px; display:none; align-items:center; gap:8px;">
+      <input id="tokenCopyInput" readonly style="flex:1; background:#0f172a; border:1px solid #334155; border-radius:6px; padding:7px 10px; color:#34d399; font-size:12px; font-family:Consolas,monospace;" />
+      <button class="btn btn-secondary" onclick="copyToken()" style="padding:6px 14px; font-size:12px; white-space:nowrap;" id="btnCopyToken">Copy</button>
+    </div>
   </div>
 
   <!-- View Switch -->
@@ -252,6 +256,19 @@ async function proxy(url, method, headers, data) {
 
 function authHeader() { return { 'Authorization': `AccessToken=${S.accessToken}` }; }
 
+function showTokenCopy() {
+  const row = el('tokenCopyRow');
+  row.style.display = 'flex';
+  el('tokenCopyInput').value = S.accessToken;
+}
+function copyToken() {
+  navigator.clipboard.writeText(S.accessToken).then(() => {
+    const btn = el('btnCopyToken');
+    btn.textContent = 'Copied!'; btn.style.background = '#064e3b'; btn.style.color = '#34d399';
+    setTimeout(() => { btn.textContent = 'Copy'; btn.style.background = ''; btn.style.color = ''; }, 1500);
+  });
+}
+
 // ── Connect ──
 async function connect() {
   const btn = el('btnConnect');
@@ -278,6 +295,7 @@ async function connect() {
     el('connStatus').className = 'status connected'; el('connStatus').textContent = 'Connected';
     el('btnRefresh').disabled = false; el('btnRunAll').disabled = false;
     el('tokenInfo').innerHTML = `AT: <span>${S.accessToken}</span> | RT: <span>${S.refreshToken}</span> | Expires: <span>${tokR.result.expiresIn}s</span>`;
+    showTokenCopy();
 
     await autoDetect();
     btn.textContent = 'Reconnect';
@@ -294,6 +312,7 @@ async function doRefresh() {
     if (r.errorCode !== 0) throw new Error(r.msg);
     S.accessToken = r.result.accessToken; S.refreshToken = r.result.refreshToken;
     el('tokenInfo').innerHTML = `AT: <span>${S.accessToken}</span> | RT: <span>${S.refreshToken}</span> | <span style="color:#f59e0b">Refreshed</span>`;
+    showTokenCopy();
   } catch (e) { el('tokenInfo').innerHTML += ` | <span style="color:#fca5a5">${e.message}</span>`; }
 }
 
@@ -491,9 +510,7 @@ const APIS = [
   ]},
   { tab: 'RF Scan', title: 'RF Scan (v2 API)', items: [
     { id:'rf-result', name:'RF Scan Result', desc:'Last RF scan result (status per band)', m:'GET', p:'/openapi/v2/{oid}/sites/{sid}/aps/{apMac}/rf-scan-result', useApMac:true },
-    { id:'rf-start', name:'RF Scan Start', desc:'Start RF scanning (may not be supported on all models)', m:'POST', p:'/openapi/v2/{oid}/sites/{sid}/aps/{apMac}/start-rf-scan', useApMac:true, danger:true,
-      body: true, bodyDefault: JSON.stringify({}, null, 2)
-    },
+    { id:'rf-start', name:'RF Scan Start', desc:'Start RF scanning (may not be supported on all models)', m:'POST', p:'/openapi/v2/{oid}/sites/{sid}/aps/{apMac}/start-rf-scan', useApMac:true, danger:true, noBody: true },
   ]},
   { tab: 'ACL', title: 'ACL (Client Isolation)', items: [
     { id:'acl-list', name:'EAP ACL List', desc:'ACL rules for client isolation', m:'GET', p:'/openapi/v1/{oid}/sites/{sid}/acls/eap-acls?pageSize=100&page=1' },
@@ -533,6 +550,7 @@ async function runApi(id) {
   try {
     const overrides = {};
     if (api.params) api.params.forEach(p => { const v = el(`param-${id}-${p.k}`); if (v) overrides[p.k] = v.value; });
+    if (api.useApMac) { const v = el(`param-${id}-apMac`); if (v && v.value) overrides.apMac = v.value; }
 
     let resp;
     if (api.isInternal) {
@@ -551,7 +569,7 @@ async function runApi(id) {
       const url = val('baseUrl') + resolvePath(api.p, overrides);
       let reqBody = null;
       if (api.body) { const ta = el(`reqbody-${id}`); if (ta && ta.value.trim()) reqBody = JSON.parse(ta.value); }
-      if (!reqBody && (api.m === 'POST' || api.m === 'PATCH')) reqBody = {};
+      if (!api.noBody && !reqBody && (api.m === 'POST' || api.m === 'PATCH')) reqBody = {};
       resp = await proxy(url, api.m, authHeader(), reqBody);
     }
     result.innerHTML = highlight(JSON.stringify(resp, null, 2));
