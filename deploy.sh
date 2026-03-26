@@ -2,7 +2,7 @@
 # Omada API Tester - 빌드 & 배포 스크립트
 # 사용법: bash deploy.sh
 
-SERVER="trizadmin@192.168.1.55"
+SERVER="root@192.168.1.45"
 REMOTE_DIR="/root/omada_api_tester"
 ARCHIVE="omada_api_tester.tar.gz"
 
@@ -22,4 +22,4 @@ ssh "$SERVER" "cd $REMOTE_DIR && tar -xzf $ARCHIVE && rm -f $ARCHIVE && echo 'Ex
 
 echo ""
 echo "=== Done! ==="
-echo "http://192.168.1.55:3000"
+echo "http://192.168.1.45:3000"
