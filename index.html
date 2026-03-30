@@ -723,6 +723,7 @@ async function runApi(id) {
   try {
     const overrides = {};
     if (api.params) api.params.forEach(p => { const v = el(`param-${id}-${p.k}`); if (v) overrides[p.k] = v.value; });
+    if (api.useApMac) { const v = el(`param-${id}-apMac`); if (v && v.value) overrides.apMac = v.value; }
 
     let resp;
     if (api.isInternal) {
