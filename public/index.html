@@ -323,7 +323,7 @@
         <code>-2</code> = Auto (권장)
         <br><br>
         <b style="color:#38bdf8;">Radio - txPower (dBm)</b><br>
-        2.4G: 4~26 | 5G: 4~27 | 6G: 4~23<br>
+        2.4G: 7~23 | 5G: 7~23 | 6G: 7~23<br>
         <span style="color:#94a3b8;">모델별 상이 (deviceMisc.min/maxPower)</span>
         <br><br>
         <b style="color:#38bdf8;">Radio - boolean</b><br>
@@ -548,7 +548,7 @@ const APIS = [
     { id:'radio-5g-off', name:'5G Radio OFF', desc:'Disable 5G radio (channelRange 포함)', m:'PATCH', p:'/openapi/v1/{oid}/sites/{sid}/aps/{apMac}/radio-config', useApMac:true,
       body: true, bodyDefault: JSON.stringify({ radioSetting5g: { radioEnable: false, channelRange: [5180,5200,5220,5240,5260,5280,5300,5320,5500,5520,5540,5560,5580,5600,5620,5640,5660,5680,5700,5745,5765,5785,5805,5825] } }, null, 2)
     },
-    { id:'radio-ch', name:'Channel Set', desc:'channelWidth: "1"=20MHz, "2"=auto20/40, "4"=40MHz, "6"=80/160MHz | channel: "0"=auto, "1","6","11"... | txPower: 7~28 dBm | 5G는 channelRange 필수', m:'PATCH', p:'/openapi/v1/{oid}/sites/{sid}/aps/{apMac}/radio-config', useApMac:true,
+    { id:'radio-ch', name:'Channel Set', desc:'channelWidth: "1"=20MHz, "2"=auto20/40, "4"=40MHz, "6"=80/160MHz | channel: "0"=auto, "1","6","11"... | txPower: 7~23 dBm | 5G는 channelRange 필수', m:'PATCH', p:'/openapi/v1/{oid}/sites/{sid}/aps/{apMac}/radio-config', useApMac:true,
       body: true, bodyDefault: JSON.stringify({
         radioSetting2g: { channelWidth: "4", channel: "0", txPower: 26 },
         radioSetting5g: { channelWidth: "6", channel: "0", txPower: 27, channelRange: [5180,5200,5220,5240,5260,5280,5300,5320,5500,5520,5540,5560,5580,5600,5620,5640,5660,5680,5700,5745,5765,5785,5805,5825], channelLimitEnable: false, wirelessMode: -2 }
@@ -929,7 +929,7 @@ const FEATURES_BY_API = [
   { type:'설정', cat:'Radio', api:`PATCH ${P}/aps/{apMac}/radio-config`,
     sm:'PATCH', sp:`${P}/aps/{apMac}/radio-config`, vf:`${P}/aps/{apMac}/radio-config`,
     sb:{radioSetting2g:{radioEnable:true,channelWidth:"4",channel:"0",txPower:26},radioSetting5g:{radioEnable:true,channelWidth:"6",channel:"0",txPower:27,channelRange:[5180,5200,5220,5240,5260,5280,5300,5320,5500,5520,5540,5560,5580,5600,5620,5640,5660,5680,5700,5745,5765,5785,5805,5825],channelLimitEnable:false,wirelessMode:-2}},
-    items:['무선 ON/OFF (radioEnable)','채널 설정 (channel: "0"=auto)','대역폭 설정 (channelWidth: "1"=20,"4"=40,"6"=80/160)','TX 파워 설정 (txPower: 7~28 dBm)','⚠ 5G 채널/대역폭 변경 시 channelRange(주파수 리스트) 포함 필수 (supportChannelRange 모델)'] },
+    items:['무선 ON/OFF (radioEnable)','채널 설정 (channel: "0"=auto)','대역폭 설정 (channelWidth: "1"=20,"4"=40,"6"=80/160)','TX 파워 설정 (txPower: 7~23 dBm)','⚠ 5G 채널/대역폭 변경 시 channelRange(주파수 리스트) 포함 필수 (supportChannelRange 모델)'] },
   { type:'설정', cat:'Beacon/고급', api:`PATCH ${P}/beacon-control`,
     sm:'PATCH', sp:`${P}/beacon-control`, vf:`${P}/beacon-control`,
     sb:{beaconControl:{dtimPeriod2g:1,rtsThreshold2g:2347,fragmentationThreshold2g:2346,beaconIntvMode2g:0},airtimeFairness:{enable2g:false,enable5g:false,enable6g:false}},
