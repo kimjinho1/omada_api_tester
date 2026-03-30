@@ -137,6 +137,142 @@
   <div style="display:flex; gap:6px; margin-bottom:16px;">
     <button class="btn btn-primary" id="btnViewApi" onclick="switchView('api')" style="font-size:13px;">API Tester</button>
     <button class="btn btn-secondary" id="btnViewFunc" onclick="switchView('func')" style="font-size:13px;">Feature Checklist</button>
+    <button class="btn btn-secondary" id="btnViewWireless" onclick="switchView('wireless')" style="font-size:13px;">Wireless Setup</button>
+  </div>
+
+  <!-- Wireless Setup View -->
+  <div id="wirelessView" style="display:none;">
+    <div class="config" style="padding:16px; margin-bottom:12px;">
+      <h2 style="margin-bottom:12px; color:#38bdf8;">Wireless Setup Workflow</h2>
+      <p style="font-size:13px; color:#94a3b8; margin-bottom:12px;">Radio → SSID → WLAN Group 지정 순서로 무선 설정을 진행합니다. 각 단계에서 설정 후 검증까지 수행됩니다.</p>
+      <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
+        <label style="font-size:13px; color:#cbd5e1; white-space:nowrap;">Target AP:</label>
+        <select id="ws-apMac" style="flex:1;background:#0f172a;border:1px solid #334155;border-radius:5px;padding:8px;color:#e2e8f0;font-size:13px;font-family:Consolas,monospace;"></select>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <label style="font-size:13px; color:#cbd5e1; white-space:nowrap;">WLAN Group:</label>
+        <select id="ws-wlanSelect" onchange="wsOnWlanSelect()" style="flex:1;background:#0f172a;border:1px solid #334155;border-radius:5px;padding:8px;color:#e2e8f0;font-size:13px;font-family:Consolas,monospace;">
+          <option value="">조회 버튼을 클릭하세요</option>
+        </select>
+        <button class="btn btn-secondary" onclick="wsLoadWlanGroups()" style="font-size:12px; padding:6px 12px;">새로고침</button>
+      </div>
+    </div>
+
+    <!-- Step 1: 현재 상태 조��� -->
+    <div class="config" style="padding:16px; margin-bottom:12px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h2 style="margin:0; color:#34d399;">Step 1. 현재 상태 조회</h2>
+        <button class="btn btn-primary" onclick="wsLoadStatus()" style="font-size:13px;">조회</button>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+        <div>
+          <div style="font-size:13px; font-weight:600; color:#cbd5e1; margin-bottom:6px;">Radio Config</div>
+          <div id="ws-radio-status" class="api-result" style="max-height:300px; font-size:12px;">조회 버튼을 클릭하세요</div>
+        </div>
+        <div>
+          <div style="font-size:13px; font-weight:600; color:#cbd5e1; margin-bottom:6px;">SSID List (현재 WLAN Group)</div>
+          <div id="ws-ssid-status" class="api-result" style="max-height:300px; font-size:12px;">조회 버튼을 클릭하세요</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2: Radio 설정 -->
+    <div class="config" style="padding:16px; margin-bottom:12px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h2 style="margin:0; color:#fb923c;">Step 2. Radio 설정 (AP별)</h2>
+        <div style="display:flex; gap:6px;">
+          <button class="btn btn-warn" onclick="wsApplyRadio()" style="font-size:13px;">적��</button>
+          <button class="btn btn-primary" onclick="wsVerifyRadio()" style="font-size:13px;">검증</button>
+        </div>
+      </div>
+      <p style="font-size:12px; color:#94a3b8; margin-bottom:10px;">변경할 밴드만 체크하세요. 체크하지 않은 밴드는 변경하지 않습니다.</p>
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;">
+        <!-- 2.4G -->
+        <div style="background:#0f172a; border-radius:8px; padding:12px; border:1px solid #334155;">
+          <label style="display:flex; align-items:center; gap:6px; font-size:14px; font-weight:600; color:#34d399; margin-bottom:10px;">
+            <input type="checkbox" id="ws-r2g-enable-chk" checked> 2.4G
+          </label>
+          <div style="display:grid; gap:8px;">
+            <div><label style="font-size:11px;color:#94a3b8;">Radio</label><select id="ws-r2g-on" style="width:100%;background:#1e293b;border:1px solid #334155;border-radius:4px;padding:6px;color:#e2e8f0;font-size:12px;"><option value="true">ON</option><option value="false">OFF</option></select></div>
+            <div><label style="font-size:11px;color:#94a3b8;">Channel</label><select id="ws-r2g-ch" style="width:100%;background:#1e293b;border:1px solid #334155;border-radius:4px;padding:6px;color:#e2e8f0;font-size:12px;"><option value="0">Auto</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option></select></div>
+            <div><label style="font-size:11px;color:#94a3b8;">Bandwidth</label><select id="ws-r2g-bw" style="width:100%;background:#1e293b;border:1px solid #334155;border-radius:4px;padding:6px;color:#e2e8f0;font-size:12px;"><option value="1">20MHz</option><option value="2">Auto 20/40</option><option value="4">40MHz</option></select></div>
+            <div><label style="font-size:11px;color:#94a3b8;">TX Power (dBm)</label><input id="ws-r2g-tx" type="number" value="20" min="4" max="25" style="width:100%;background:#1e293b;border:1px solid #334155;border-radius:4px;padding:6px;color:#e2e8f0;font-size:12px;" /></div>
+          </div>
+        </div>
+        <!-- 5G -->
+        <div style="background:#0f172a; border-radius:8px; padding:12px; border:1px solid #334155;">
+          <label style="display:flex; align-items:center; gap:6px; font-size:14px; font-weight:600; color:#38bdf8; margin-bottom:10px;">
+            <input type="checkbox" id="ws-r5g-enable-chk" checked> 5G
+          </label>
+          <div style="background:#78350f; border:1px solid #f59e0b; border-radius:6px; padding:8px; margin-bottom:8px; font-size:11px; color:#fde68a; line-height:1.5;">
+            &#9888; 5G 채널/대역폭 변경 시 channelRange(주파수 리스트)가 자동 포함됩니다. (supportChannelRange 모델: EAP653 UR 등)
+          </div>
+          <div style="display:grid; gap:8px;">
+            <div><label style="font-size:11px;color:#94a3b8;">Radio</label><select id="ws-r5g-on" style="width:100%;background:#1e293b;border:1px solid #334155;border-radius:4px;padding:6px;color:#e2e8f0;font-size:12px;"><option value="true">ON</option><option value="false">OFF</option></select></div>
+            <div><label style="font-size:11px;color:#94a3b8;">Channel</label><select id="ws-r5g-ch" style="width:100%;background:#1e293b;border:1px solid #334155;border-radius:4px;padding:6px;color:#e2e8f0;font-size:12px;"><option value="0">Auto</option><option value="36">36</option><option value="40">40</option><option value="44">44</option><option value="48">48</option><option value="149">149</option><option value="153">153</option><option value="157">157</option><option value="161">161</option><option value="165">165</option></select></div>
+            <div><label style="font-size:11px;color:#94a3b8;">Bandwidth</label><select id="ws-r5g-bw" style="width:100%;background:#1e293b;border:1px solid #334155;border-radius:4px;padding:6px;color:#e2e8f0;font-size:12px;"><option value="1">20MHz</option><option value="2">Auto 20/40</option><option value="4">40MHz</option><option value="6">80/160MHz</option></select></div>
+            <div><label style="font-size:11px;color:#94a3b8;">TX Power (dBm)</label><input id="ws-r5g-tx" type="number" value="20" min="4" max="25" style="width:100%;background:#1e293b;border:1px solid #334155;border-radius:4px;padding:6px;color:#e2e8f0;font-size:12px;" /></div>
+          </div>
+        </div>
+        <!-- 6G -->
+        <div style="background:#0f172a; border-radius:8px; padding:12px; border:1px solid #334155;">
+          <label style="display:flex; align-items:center; gap:6px; font-size:14px; font-weight:600; color:#c084fc; margin-bottom:10px;">
+            <input type="checkbox" id="ws-r6g-enable-chk"> 6G
+          </label>
+          <div style="display:grid; gap:8px;">
+            <div><label style="font-size:11px;color:#94a3b8;">Radio</label><select id="ws-r6g-on" style="width:100%;background:#1e293b;border:1px solid #334155;border-radius:4px;padding:6px;color:#e2e8f0;font-size:12px;"><option value="true">ON</option><option value="false">OFF</option></select></div>
+            <div><label style="font-size:11px;color:#94a3b8;">Channel</label><select id="ws-r6g-ch" style="width:100%;background:#1e293b;border:1px solid #334155;border-radius:4px;padding:6px;color:#e2e8f0;font-size:12px;"><option value="0">Auto</option><option value="1">1</option><option value="5">5</option><option value="9">9</option><option value="13">13</option><option value="37">37</option><option value="41">41</option><option value="45">45</option><option value="49">49</option></select></div>
+            <div><label style="font-size:11px;color:#94a3b8;">Bandwidth</label><select id="ws-r6g-bw" style="width:100%;background:#1e293b;border:1px solid #334155;border-radius:4px;padding:6px;color:#e2e8f0;font-size:12px;"><option value="6">80MHz</option><option value="8">160MHz</option></select></div>
+            <div><label style="font-size:11px;color:#94a3b8;">TX Power (dBm)</label><input id="ws-r6g-tx" type="number" value="20" min="4" max="23" style="width:100%;background:#1e293b;border:1px solid #334155;border-radius:4px;padding:6px;color:#e2e8f0;font-size:12px;" /></div>
+          </div>
+        </div>
+      </div>
+      <div id="ws-radio-result" class="api-result" style="margin-top:10px; display:none; max-height:300px; font-size:12px;"></div>
+    </div>
+
+    <!-- Step 3: SSID 설정 -->
+    <div class="config" style="padding:16px; margin-bottom:12px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h2 style="margin:0; color:#fb923c;">Step 3. SSID 생성/수정 (WLAN Group 단위)</h2>
+        <div style="display:flex; gap:6px;">
+          <button class="btn btn-warn" onclick="wsApplySsid()" style="font-size:13px;">생성</button>
+          <button class="btn btn-primary" onclick="wsVerifySsid()" style="font-size:13px;">검증</button>
+        </div>
+      </div>
+      <p style="font-size:12px; color:#94a3b8; margin-bottom:10px;">상단에서 선택한 WLAN Group에 SSID를 생성/수정/삭제합니다.</p>
+      <div style="display:grid; grid-template-columns:1fr; gap:12px; margin-bottom:10px;">
+        <div>
+          <label style="font-size:11px;color:#94a3b8;">동작</label>
+          <select id="ws-ssid-mode" onchange="wsToggleSsidMode()" style="width:100%;background:#0f172a;border:1px solid #334155;border-radius:4px;padding:8px;color:#e2e8f0;font-size:13px;">
+            <option value="create">새 SSID ��성</option>
+            <option value="update">기존 SSID 수정</option>
+            <option value="delete">SSID 삭제</option>
+          </select>
+        </div>
+      </div>
+      <div id="ws-ssid-id-row" style="display:none; margin-bottom:10px;">
+        <label style="font-size:11px;color:#94a3b8;">SSID ID (수정/삭제 시)</label>
+        <input id="ws-ssidId" placeholder="from SSID List" style="width:100%;background:#0f172a;border:1px solid #334155;border-radius:4px;padding:8px;color:#e2e8f0;font-size:13px;font-family:Consolas,monospace;" />
+      </div>
+      <div id="ws-ssid-body-row">
+        <label style="font-size:11px;color:#94a3b8;">SSID Config (JSON)</label>
+        <textarea id="ws-ssid-body" style="width:100%;min-height:180px;background:#0f172a;border:1px solid #334155;border-radius:4px;padding:10px;color:#e2e8f0;font-size:13px;font-family:Consolas,monospace;resize:vertical;"></textarea>
+      </div>
+      <div id="ws-ssid-result" class="api-result" style="margin-top:10px; display:none; max-height:300px; font-size:12px;"></div>
+    </div>
+
+    <!-- Step 4: WLAN Group → AP 지정 -->
+    <div class="config" style="padding:16px; margin-bottom:12px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h2 style="margin:0; color:#fb923c;">Step 4. WLAN Group → AP 지정 (내부API)</h2>
+        <div style="display:flex; gap:6px;">
+          <button class="btn btn-warn" onclick="wsAssignWlan()" style="font-size:13px;">지정</button>
+          <button class="btn btn-primary" onclick="wsVerifyWlan()" style="font-size:13px;">검증</button>
+        </div>
+      </div>
+      <p style="font-size:12px; color:#94a3b8; margin-bottom:8px;">상단에서 선택한 WLAN Group을 Target AP에 지정합니다.</p>
+      <div id="ws-assign-result" class="api-result" style="margin-top:10px; display:none; max-height:300px; font-size:12px;"></div>
+    </div>
   </div>
 
   <!-- Feature Checklist View -->
@@ -161,48 +297,93 @@
       <h2 style="margin:0;">API Parameter Reference</h2>
       <button class="btn btn-secondary" style="padding:4px 12px; font-size:11px;" onclick="el('refPanel').style.display='none'">Close</button>
     </div>
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px;">
       <div>
-        <b style="color:#38bdf8;">Radio - channelWidth</b><br>
-        <code>"1"</code>=20MHz, <code>"2"</code>=Auto 20/40MHz, <code>"4"</code>=40MHz, <code>"6"</code>=80MHz/160MHz, <code>"8"</code>=160MHz (6G)
+        <b style="color:#38bdf8;">Radio - channelWidth (대역폭)</b><br>
+        <code>"1"</code> = 20MHz<br>
+        <code>"2"</code> = Auto 20/40MHz<br>
+        <code>"4"</code> = 40MHz<br>
+        <code>"5"</code> = Auto (5G 내부값)<br>
+        <code>"6"</code> = 80/160MHz (5G)<br>
+        <code>"8"</code> = 160MHz (6G)
         <br><br>
-        <b style="color:#38bdf8;">Radio - channel</b><br>
-        <code>"0"</code>=Auto<br>
-        2.4G: <code>"1","2","3"..."13"</code><br>
-        5G: <code>"36","40","44","48","149","153","157","161","165"</code> ...<br>
-        6G: <code>"1","5","9"..."233"</code>
-        <br><br>
-        <b style="color:#38bdf8;">Radio - txPower</b><br>
-        2.4G: 4~25 dBm, 5G: 4~25 dBm, 6G: 4~23 dBm<br>
-        실제 범위는 모델별 상이 (deviceMisc.minPower/maxPower 참조)
+        <b style="color:#38bdf8;">Radio - channel (채널)</b><br>
+        <code>"0"</code> = Auto<br>
+        2.4G: <code>"1"</code>~<code>"13"</code><br>
+        5G UNII-1: <code>"36","40","44","48"</code><br>
+        5G UNII-2 (DFS): <code>"52","56","60","64"</code><br>
+        5G UNII-2e (DFS): <code>"100"</code>~<code>"140"</code><br>
+        5G UNII-3: <code>"149","153","157","161","165"</code>
         <br><br>
         <b style="color:#38bdf8;">Radio - wirelessMode</b><br>
-        <code>-2</code>=Auto<br>
-        2.4G: b/g/n/ax/be mixed<br>
-        5G: a/n/ac/ax/be mixed<br>
-        6G: ax/be mixed
+        <code>-2</code> = Auto (권장)
+        <br><br>
+        <b style="color:#38bdf8;">Radio - txPower (dBm)</b><br>
+        2.4G: 4~26 | 5G: 4~27 | 6G: 4~23<br>
+        <span style="color:#94a3b8;">모델별 상이 (deviceMisc.min/maxPower)</span>
+        <br><br>
+        <b style="color:#38bdf8;">Radio - boolean</b><br>
+        <code>radioEnable</code>: 무선 ON/OFF<br>
+        <code>channelLimitEnable</code>: 채널 제한 (5G/6G)
+        <br><br>
+        <b style="color:#f59e0b;">⚠ 5G channelRange</b><br>
+        5G 채널/대역폭 변경 시 <b>channelRange 필수</b><br>
+        <span style="color:#94a3b8;">없으면 Success 반환되나 미반영</span>
       </div>
       <div>
         <b style="color:#38bdf8;">SSID - band (bitmask)</b><br>
-        <code>1</code>=2.4G, <code>2</code>=5G, <code>3</code>=2.4+5G, <code>4</code>=6G, <code>5</code>=2.4+6G, <code>6</code>=5+6G, <code>7</code>=All
+        <code>1</code> = 2.4G<br>
+        <code>2</code> = 5G<br>
+        <code>3</code> = 2.4G + 5G<br>
+        <code>4</code> = 6G<br>
+        <code>5</code> = 2.4G + 6G<br>
+        <code>6</code> = 5G + 6G<br>
+        <code>7</code> = 전체
         <br><br>
-        <b style="color:#38bdf8;">SSID - security</b><br>
-        <code>0</code>=Open, <code>2</code>=WPA-Enterprise, <code>3</code>=WPA-Personal, <code>4</code>=PPSK w/o RADIUS, <code>5</code>=PPSK w/ RADIUS
+        <b style="color:#38bdf8;">SSID - security (인증)</b><br>
+        <code>0</code> = Open<br>
+        <code>2</code> = WPA-Enterprise<br>
+        <code>3</code> = WPA-Personal (PSK)<br>
+        <code>4</code> = PPSK w/o RADIUS<br>
+        <code>5</code> = PPSK w/ RADIUS
         <br><br>
         <b style="color:#38bdf8;">pskSetting - versionPsk</b><br>
-        <code>1</code>=WPA-PSK, <code>2</code>=WPA2-PSK, <code>3</code>=WPA/WPA2-PSK, <code>4</code>=WPA3-SAE
+        <code>1</code> = WPA-PSK<br>
+        <code>2</code> = WPA2-PSK (권장)<br>
+        <code>3</code> = WPA/WPA2-PSK (호환)<br>
+        <code>4</code> = WPA3-SAE <span style="color:#fde68a;">(AES+PMF필수)</span>
         <br><br>
         <b style="color:#38bdf8;">pskSetting - encryptionPsk</b><br>
-        <code>1</code>=Auto, <code>3</code>=AES (WPA3-SAE는 AES 필수)
-        <br><br>
-        <b style="color:#38bdf8;">SSID - pmfMode</b><br>
-        <code>1</code>=Mandatory, <code>2</code>=Capable, <code>3</code>=Disable
+        <code>1</code> = Auto (TKIP+AES)<br>
+        <code>3</code> = AES only <span style="color:#fde68a;">(WPA3 필수)</span>
+      </div>
+      <div>
+        <b style="color:#38bdf8;">SSID - pmfMode (PMF)</b><br>
+        <code>1</code> = Mandatory <span style="color:#fde68a;">(WPA3 필수)</span><br>
+        <code>2</code> = Capable (권장)<br>
+        <code>3</code> = Disable
         <br><br>
         <b style="color:#38bdf8;">SSID - deviceType</b><br>
-        <code>1</code>=EAP only, <code>2</code>=Gateway only, <code>3</code>=EAP+Gateway
+        <code>1</code> = EAP only<br>
+        <code>2</code> = Gateway only<br>
+        <code>3</code> = EAP + Gateway
+        <br><br>
+        <b style="color:#38bdf8;">SSID - broadcast</b><br>
+        <code>true</code> = SSID 표시<br>
+        <code>false</code> = SSID 숨김
+        <br><br>
+        <b style="color:#38bdf8;">SSID - boolean 필드</b><br>
+        <code>mloEnable</code>: MLO<br>
+        <code>enable11r</code>: 802.11r 로밍<br>
+        <code>hidePwd</code>: 비밀번호 숨김<br>
+        <code>vlanEnable</code>: VLAN 사용<br>
+        <code>guestNetEnable</code>: 게스트<br>
+        <code>greEnable</code>: EoGRE 터널<br>
+        <code>gikRekeyPskEnable</code>: 그룹키 갱신
         <br><br>
         <b style="color:#38bdf8;">Device - status</b><br>
-        <code>1</code>=Connected, <code>2</code>=Disconnected
+        <code>1</code> = Connected<br>
+        <code>2</code> = Disconnected
       </div>
     </div>
   </div>
@@ -357,22 +538,22 @@ const APIS = [
     { id:'radio-2g-off', name:'2.4G Radio OFF', desc:'Disable 2.4G radio', m:'PATCH', p:'/openapi/v1/{oid}/sites/{sid}/aps/{apMac}/radio-config', useApMac:true,
       body: true, bodyDefault: JSON.stringify({ radioSetting2g: { radioEnable: false } }, null, 2)
     },
-    { id:'radio-5g-on', name:'5G Radio ON', desc:'Enable 5G radio', m:'PATCH', p:'/openapi/v1/{oid}/sites/{sid}/aps/{apMac}/radio-config', useApMac:true,
-      body: true, bodyDefault: JSON.stringify({ radioSetting5g: { radioEnable: true } }, null, 2)
+    { id:'radio-5g-on', name:'5G Radio ON', desc:'Enable 5G radio (channelRange 포함)', m:'PATCH', p:'/openapi/v1/{oid}/sites/{sid}/aps/{apMac}/radio-config', useApMac:true,
+      body: true, bodyDefault: JSON.stringify({ radioSetting5g: { radioEnable: true, channelRange: [5180,5200,5220,5240,5260,5280,5300,5320,5500,5520,5540,5560,5580,5600,5620,5640,5660,5680,5700,5745,5765,5785,5805,5825] } }, null, 2)
     },
-    { id:'radio-5g-off', name:'5G Radio OFF', desc:'Disable 5G radio', m:'PATCH', p:'/openapi/v1/{oid}/sites/{sid}/aps/{apMac}/radio-config', useApMac:true,
-      body: true, bodyDefault: JSON.stringify({ radioSetting5g: { radioEnable: false } }, null, 2)
+    { id:'radio-5g-off', name:'5G Radio OFF', desc:'Disable 5G radio (channelRange 포함)', m:'PATCH', p:'/openapi/v1/{oid}/sites/{sid}/aps/{apMac}/radio-config', useApMac:true,
+      body: true, bodyDefault: JSON.stringify({ radioSetting5g: { radioEnable: false, channelRange: [5180,5200,5220,5240,5260,5280,5300,5320,5500,5520,5540,5560,5580,5600,5620,5640,5660,5680,5700,5745,5765,5785,5805,5825] } }, null, 2)
     },
-    { id:'radio-ch', name:'Channel Set', desc:'channelWidth: "1"=20MHz, "2"=auto20/40, "4"=40MHz, "6"=80/160MHz | channel: "0"=auto, "1","6","11"... | txPower: 7~28 dBm', m:'PATCH', p:'/openapi/v1/{oid}/sites/{sid}/aps/{apMac}/radio-config', useApMac:true,
+    { id:'radio-ch', name:'Channel Set', desc:'channelWidth: "1"=20MHz, "2"=auto20/40, "4"=40MHz, "6"=80/160MHz | channel: "0"=auto, "1","6","11"... | txPower: 7~28 dBm | 5G는 channelRange 필수', m:'PATCH', p:'/openapi/v1/{oid}/sites/{sid}/aps/{apMac}/radio-config', useApMac:true,
       body: true, bodyDefault: JSON.stringify({
         radioSetting2g: { channelWidth: "4", channel: "0", txPower: 26 },
-        radioSetting5g: { channelWidth: "6", channel: "0", txPower: 27 }
+        radioSetting5g: { channelWidth: "6", channel: "0", txPower: 27, channelRange: [5180,5200,5220,5240,5260,5280,5300,5320,5500,5520,5540,5560,5580,5600,5620,5640,5660,5680,5700,5745,5765,5785,5805,5825], channelLimitEnable: false, wirelessMode: -2 }
       }, null, 2)
     },
     { id:'radio-full', name:'Radio Full Config Set', desc:'Full radio config for all bands (2.4G, 5G, 6G)', m:'PATCH', p:'/openapi/v1/{oid}/sites/{sid}/aps/{apMac}/radio-config', useApMac:true,
       body: true, bodyDefault: JSON.stringify({
         radioSetting2g: { radioEnable: true, channelWidth: "4", channel: "0", txPower: 26, wirelessMode: -2 },
-        radioSetting5g: { radioEnable: true, channelWidth: "6", channel: "0", txPower: 27, channelLimitEnable: false, wirelessMode: -2 },
+        radioSetting5g: { radioEnable: true, channelWidth: "6", channel: "0", txPower: 27, channelLimitEnable: false, wirelessMode: -2, channelRange: [5180,5200,5220,5240,5260,5280,5300,5320,5500,5520,5540,5560,5580,5600,5620,5640,5660,5680,5700,5745,5765,5785,5805,5825] },
         radioSetting6g: { radioEnable: true, channelWidth: "8", channel: "0", txPower: 28, channelLimitEnable: false, wirelessMode: -2 }
       }, null, 2)
     },
@@ -499,7 +680,9 @@ const APIS = [
   ]},
   { tab: 'RF Scan', title: 'RF Scan (v2 API)', items: [
     { id:'rf-result', name:'RF Scan Result', desc:'Last RF scan result (status per band)', m:'GET', p:'/openapi/v2/{oid}/sites/{sid}/aps/{apMac}/rf-scan-result', useApMac:true },
-    { id:'rf-start', name:'RF Scan Start', desc:'Start RF scanning (may not be supported on all models)', m:'POST', p:'/openapi/v2/{oid}/sites/{sid}/aps/{apMac}/start-rf-scan', useApMac:true, danger:true },
+    { id:'rf-start', name:'RF Scan Start', desc:'Start RF scanning (may not be supported on all models)', m:'POST', p:'/openapi/v2/{oid}/sites/{sid}/aps/{apMac}/start-rf-scan', useApMac:true, danger:true,
+      body: true, bodyDefault: JSON.stringify({}, null, 2)
+    },
   ]},
   { tab: 'ACL', title: 'ACL (Client Isolation)', items: [
     { id:'acl-list', name:'EAP ACL List', desc:'ACL rules for client isolation', m:'GET', p:'/openapi/v1/{oid}/sites/{sid}/acls/eap-acls?pageSize=100&page=1' },
@@ -740,8 +923,8 @@ const FEATURES_BY_API = [
     items:['장비 리부팅'], field:'Success' },
   { type:'설정', cat:'Radio', api:`PATCH ${P}/aps/{apMac}/radio-config`,
     sm:'PATCH', sp:`${P}/aps/{apMac}/radio-config`, vf:`${P}/aps/{apMac}/radio-config`,
-    sb:{radioSetting2g:{radioEnable:true,channelWidth:"4",channel:"0",txPower:26},radioSetting5g:{radioEnable:true,channelWidth:"6",channel:"0",txPower:27}},
-    items:['무선 ON/OFF (radioEnable)','채널 설정 (channel: "0"=auto)','대역폭 설정 (channelWidth: "1"=20,"4"=40,"6"=80/160)','TX 파워 설정 (txPower: 7~28 dBm)'] },
+    sb:{radioSetting2g:{radioEnable:true,channelWidth:"4",channel:"0",txPower:26},radioSetting5g:{radioEnable:true,channelWidth:"6",channel:"0",txPower:27,channelRange:[5180,5200,5220,5240,5260,5280,5300,5320,5500,5520,5540,5560,5580,5600,5620,5640,5660,5680,5700,5745,5765,5785,5805,5825],channelLimitEnable:false,wirelessMode:-2}},
+    items:['무선 ON/OFF (radioEnable)','채널 설정 (channel: "0"=auto)','대역폭 설정 (channelWidth: "1"=20,"4"=40,"6"=80/160)','TX 파워 설정 (txPower: 7~28 dBm)','⚠ 5G 채널/대역폭 변경 시 channelRange(주파수 리스트) 포함 필수 (supportChannelRange 모델)'] },
   { type:'설정', cat:'Beacon/고급', api:`PATCH ${P}/beacon-control`,
     sm:'PATCH', sp:`${P}/beacon-control`, vf:`${P}/beacon-control`,
     sb:{beaconControl:{dtimPeriod2g:1,rtsThreshold2g:2347,fragmentationThreshold2g:2346,beaconIntvMode2g:0},airtimeFairness:{enable2g:false,enable5g:false,enable6g:false}},
@@ -797,9 +980,12 @@ function filterFunc(f) { funcFilter = f; renderFunc(); }
 function switchView(v) {
   el('apiView').style.display = v === 'api' ? 'block' : 'none';
   el('funcView').style.display = v === 'func' ? 'block' : 'none';
+  el('wirelessView').style.display = v === 'wireless' ? 'block' : 'none';
   el('btnViewApi').className = `btn ${v==='api'?'btn-primary':'btn-secondary'}`;
   el('btnViewFunc').className = `btn ${v==='func'?'btn-primary':'btn-secondary'}`;
+  el('btnViewWireless').className = `btn ${v==='wireless'?'btn-primary':'btn-secondary'}`;
   if (v === 'func') renderFunc();
+  if (v === 'wireless') wsInit();
 }
 
 const featSetDone = new Set();
@@ -908,6 +1094,209 @@ function renderFunc() {
 
 render();
 renderFunc();
+
+// ── Wireless Setup ──
+function wsInit() {
+  const mainSel = el('apMac');
+  const wsSel = el('ws-apMac');
+  wsSel.innerHTML = mainSel.innerHTML;
+  wsSel.value = mainSel.value;
+  // load WLAN groups if not loaded yet
+  if (el('ws-wlanSelect').options.length <= 1 && S.accessToken) wsLoadWlanGroups();
+  // default SSID body
+  if (!el('ws-ssid-body').value) {
+    el('ws-ssid-body').value = JSON.stringify({
+      name: "my-ssid", band: 3, security: 3, broadcast: true, mloEnable: false,
+      pmfMode: 2, enable11r: false, hidePwd: true, vlanEnable: false, guestNetEnable: false, deviceType: 1,
+      pskSetting: { securityKey: "password12345", versionPsk: 2, encryptionPsk: 1, gikRekeyPskEnable: false }
+    }, null, 2);
+  }
+}
+
+function wsApMac() { return el('ws-apMac').value; }
+function wsWlanId() { return el('ws-wlanSelect').value || val('wlanId'); }
+
+// WLAN Group 목록 로드
+async function wsLoadWlanGroups() {
+  if (!S.accessToken) { alert('먼저 Access Token을 발급하세요.'); return; }
+  const base = val('baseUrl'), oid = val('omadacId'), sid = val('siteId');
+  const sel = el('ws-wlanSelect');
+  sel.innerHTML = '<option value="">로딩 중...</option>';
+  try {
+    const r = await proxy(`${base}/openapi/v1/${oid}/sites/${sid}/wireless-network/wlans?pageSize=200&page=1`, 'GET', authHeader(), null);
+    const groups = Array.isArray(r.result) ? r.result : (r.result?.data || []);
+    sel.innerHTML = '';
+    groups.forEach(g => {
+      const opt = document.createElement('option');
+      opt.value = g.wlanId;
+      opt.textContent = `${g.name}${g.primary ? ' (Default)' : ''} — ${g.wlanId}`;
+      sel.appendChild(opt);
+    });
+    // select current wlanId if exists
+    const cur = val('wlanId');
+    if (cur && sel.querySelector(`option[value="${cur}"]`)) sel.value = cur;
+  } catch (e) {
+    sel.innerHTML = `<option value="">Error: ${e.message}</option>`;
+  }
+}
+
+function wsOnWlanSelect() {
+  // nothing extra needed, wsWlanId() reads from select
+}
+
+function wsShowResult(elId, data, prefix) {
+  const r = el(elId);
+  r.style.display = 'block';
+  r.innerHTML = (prefix||'') + highlight(JSON.stringify(data, null, 2));
+}
+function wsShowError(elId, msg) {
+  const r = el(elId);
+  r.style.display = 'block';
+  r.textContent = 'Error: ' + msg;
+  r.classList.add('error');
+  setTimeout(() => r.classList.remove('error'), 3000);
+}
+
+// Step 1: 현재 상태 조회
+async function wsLoadStatus() {
+  if (!S.accessToken) { alert('먼저 Access Token을 발급하세요.'); return; }
+  const base = val('baseUrl'), oid = val('omadacId'), sid = val('siteId'), ap = wsApMac();
+  el('ws-radio-status').textContent = '조회 중...';
+  el('ws-ssid-status').textContent = '조회 중...';
+  try {
+    const radio = await proxy(`${base}/openapi/v1/${oid}/sites/${sid}/aps/${ap}/radio-config`, 'GET', authHeader(), null);
+    el('ws-radio-status').innerHTML = highlight(JSON.stringify(radio.result || radio, null, 2));
+    // fill form from current values
+    const r = radio.result || radio;
+    if (r.radioSetting2g) {
+      el('ws-r2g-on').value = String(r.radioSetting2g.radioEnable);
+      el('ws-r2g-ch').value = String(r.radioSetting2g.channel || '0');
+      el('ws-r2g-bw').value = String(r.radioSetting2g.channelWidth || '4');
+      el('ws-r2g-tx').value = r.radioSetting2g.txPower || 20;
+    }
+    if (r.radioSetting5g) {
+      el('ws-r5g-on').value = String(r.radioSetting5g.radioEnable);
+      el('ws-r5g-ch').value = String(r.radioSetting5g.channel || '0');
+      el('ws-r5g-bw').value = String(r.radioSetting5g.channelWidth || '6');
+      el('ws-r5g-tx').value = r.radioSetting5g.txPower || 20;
+    }
+    if (r.radioSetting6g) {
+      el('ws-r6g-on').value = String(r.radioSetting6g.radioEnable);
+      el('ws-r6g-ch').value = String(r.radioSetting6g.channel || '0');
+      el('ws-r6g-bw').value = String(r.radioSetting6g.channelWidth || '8');
+      el('ws-r6g-tx').value = r.radioSetting6g.txPower || 20;
+    }
+  } catch (e) { el('ws-radio-status').textContent = 'Error: ' + e.message; }
+  try {
+    const wid = wsWlanId();
+    const ssids = await proxy(`${base}/openapi/v1/${oid}/sites/${sid}/wireless-network/wlans/${wid}/ssids?pageSize=100&page=1`, 'GET', authHeader(), null);
+    el('ws-ssid-status').innerHTML = highlight(JSON.stringify(ssids.result || ssids, null, 2));
+  } catch (e) { el('ws-ssid-status').textContent = 'Error: ' + e.message; }
+}
+
+// Step 2: Radio 적용
+async function wsApplyRadio() {
+  if (!S.accessToken) { alert('먼저 Access Token을 발급하세요.'); return; }
+  const base = val('baseUrl'), oid = val('omadacId'), sid = val('siteId'), ap = wsApMac();
+  const body = {};
+  if (el('ws-r2g-enable-chk').checked) {
+    body.radioSetting2g = { radioEnable: el('ws-r2g-on').value==='true', channel: el('ws-r2g-ch').value, channelWidth: el('ws-r2g-bw').value, txPower: parseInt(el('ws-r2g-tx').value) };
+  }
+  if (el('ws-r5g-enable-chk').checked) {
+    body.radioSetting5g = { radioEnable: el('ws-r5g-on').value==='true', channel: el('ws-r5g-ch').value, channelWidth: el('ws-r5g-bw').value, txPower: parseInt(el('ws-r5g-tx').value),
+      channelRange: [5180,5200,5220,5240,5260,5280,5300,5320,5500,5520,5540,5560,5580,5600,5620,5640,5660,5680,5700,5745,5765,5785,5805,5825],
+      channelLimitEnable: false, wirelessMode: -2 };
+  }
+  if (el('ws-r6g-enable-chk').checked) {
+    body.radioSetting6g = { radioEnable: el('ws-r6g-on').value==='true', channel: el('ws-r6g-ch').value, channelWidth: el('ws-r6g-bw').value, txPower: parseInt(el('ws-r6g-tx').value) };
+  }
+  if (Object.keys(body).length === 0) { alert('변경할 밴드를 체크하세요.'); return; }
+  console.log('[Wireless Setup] Radio PATCH body:', JSON.stringify(body, null, 2));
+  try {
+    const r = await proxy(`${base}/openapi/v1/${oid}/sites/${sid}/aps/${ap}/radio-config`, 'PATCH', authHeader(), body);
+    wsShowResult('ws-radio-result', r, '<b style="color:#fb923c">[SET] </b>');
+  } catch (e) { wsShowError('ws-radio-result', e.message); }
+}
+
+// Step 2: Radio 검증
+async function wsVerifyRadio() {
+  if (!S.accessToken) { alert('먼저 Access Token을 발급하세요.'); return; }
+  const base = val('baseUrl'), oid = val('omadacId'), sid = val('siteId'), ap = wsApMac();
+  try {
+    const r = await proxy(`${base}/openapi/v1/${oid}/sites/${sid}/aps/${ap}/radio-config`, 'GET', authHeader(), null);
+    wsShowResult('ws-radio-result', r, '<b style="color:#34d399">[VERIFY] </b>');
+  } catch (e) { wsShowError('ws-radio-result', e.message); }
+}
+
+// Step 3: SSID mode toggle
+function wsToggleSsidMode() {
+  const mode = el('ws-ssid-mode').value;
+  el('ws-ssid-id-row').style.display = mode === 'create' ? 'none' : 'block';
+  el('ws-ssid-body-row').style.display = mode === 'delete' ? 'none' : 'block';
+}
+
+// Step 3: SSID 적용
+async function wsApplySsid() {
+  if (!S.accessToken) { alert('먼저 Access Token을 발급하세요.'); return; }
+  const base = val('baseUrl'), oid = val('omadacId'), sid = val('siteId');
+  const wid = wsWlanId();
+  const mode = el('ws-ssid-mode').value;
+  try {
+    let r;
+    if (mode === 'create') {
+      const body = JSON.parse(el('ws-ssid-body').value);
+      r = await proxy(`${base}/openapi/v1/${oid}/sites/${sid}/wireless-network/wlans/${wid}/ssids`, 'POST', authHeader(), body);
+    } else if (mode === 'update') {
+      const ssidId = el('ws-ssidId').value;
+      if (!ssidId) { alert('SSID ID를 입력하세요.'); return; }
+      const body = JSON.parse(el('ws-ssid-body').value);
+      r = await proxy(`${base}/openapi/v1/${oid}/sites/${sid}/wireless-network/wlans/${wid}/ssids/${ssidId}/update-basic-config`, 'PATCH', authHeader(), body);
+    } else {
+      const ssidId = el('ws-ssidId').value;
+      if (!ssidId) { alert('SSID ID를 입력하세요.'); return; }
+      r = await proxy(`${base}/openapi/v1/${oid}/sites/${sid}/wireless-network/wlans/${wid}/ssids/${ssidId}`, 'DELETE', authHeader(), null);
+    }
+    wsShowResult('ws-ssid-result', r, `<b style="color:#fb923c">[${mode.toUpperCase()}] </b>`);
+  } catch (e) { wsShowError('ws-ssid-result', e.message); }
+}
+
+// Step 3: SSID 검증
+async function wsVerifySsid() {
+  if (!S.accessToken) { alert('먼저 Access Token을 발급하세요.'); return; }
+  const base = val('baseUrl'), oid = val('omadacId'), sid = val('siteId');
+  const wid = wsWlanId();
+  try {
+    const r = await proxy(`${base}/openapi/v1/${oid}/sites/${sid}/wireless-network/wlans/${wid}/ssids?pageSize=100&page=1`, 'GET', authHeader(), null);
+    wsShowResult('ws-ssid-result', r, '<b style="color:#34d399">[VERIFY] </b>');
+  } catch (e) { wsShowError('ws-ssid-result', e.message); }
+}
+
+// Step 4: WLAN Group → AP 지정 (내부 API)
+async function wsAssignWlan() {
+  if (!S.accessToken) { alert('먼저 Access Token을 발급하세요.'); return; }
+  const wlanId = wsWlanId();
+  if (!wlanId) { alert('상단에서 WLAN Group을 선택하세요.'); return; }
+  const ap = wsApMac();
+  try {
+    const r = await fetch('/proxy-internal', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ baseUrl: val('baseUrl'), omadacId: val('omadacId'), siteId: val('siteId'), apMac: ap, username: val('username'), password: val('password'), wlanId })
+    });
+    const data = await r.json();
+    wsShowResult('ws-assign-result', data.body ? JSON.parse(data.body) : data, '<b style="color:#fb923c">[ASSIGN] </b>');
+  } catch (e) { wsShowError('ws-assign-result', e.message); }
+}
+
+// Step 4: WLAN Group 검증
+async function wsVerifyWlan() {
+  if (!S.accessToken) { alert('먼저 Access Token을 발급하세요.'); return; }
+  const base = val('baseUrl'), oid = val('omadacId'), sid = val('siteId'), ap = wsApMac();
+  try {
+    const r = await proxy(`${base}/openapi/v1/${oid}/sites/${sid}/aps/${ap}`, 'GET', authHeader(), null);
+    const wlanId = (r.result || r).wlanId;
+    wsShowResult('ws-assign-result', { currentWlanId: wlanId, fullResponse: r.result || r }, '<b style="color:#34d399">[VERIFY] </b>');
+  } catch (e) { wsShowError('ws-assign-result', e.message); }
+}
 </script>
 </body>
 </html>
