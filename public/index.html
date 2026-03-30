@@ -300,12 +300,15 @@
     <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px;">
       <div>
         <b style="color:#38bdf8;">Radio - channelWidth (대역폭)</b><br>
-        <code>"1"</code> = 20MHz<br>
-        <code>"2"</code> = Auto 20/40MHz<br>
-        <code>"4"</code> = 40MHz<br>
-        <code>"5"</code> = Auto (5G 내부값)<br>
-        <code>"6"</code> = 80/160MHz (5G)<br>
-        <code>"8"</code> = 160MHz (6G)
+        <code>"1"</code> BW1 = 20MHz<br>
+        <code>"2"</code> BW2 = Auto 20/40MHz<br>
+        <code>"3"</code> BW3 = Auto 20/40MHz<br>
+        <code>"4"</code> BW4 = 40MHz<br>
+        <code>"5"</code> BW5 = Auto (80MHz 포함)<br>
+        <code>"6"</code> BW6 = 80MHz<br>
+        <code>"7"</code> BW7 = 80+160MHz (HE160)<br>
+        <code>"8"</code> BW8 = 160MHz<br>
+        <span style="color:#fde68a;">미지원값 → 가장 가까운 값으로 자동변환</span>
         <br><br>
         <b style="color:#38bdf8;">Radio - channel (채널)</b><br>
         <code>"0"</code> = Auto<br>
@@ -313,7 +316,8 @@
         5G UNII-1: <code>"36","40","44","48"</code><br>
         5G UNII-2 (DFS): <code>"52","56","60","64"</code><br>
         5G UNII-2e (DFS): <code>"100"</code>~<code>"140"</code><br>
-        5G UNII-3: <code>"149","153","157","161","165"</code>
+        5G UNII-3: <code>"149","153","157","161","165"</code><br>
+        <span style="color:#fde68a;">5G GET 응답은 channelRange 인덱스일 수 있음<br>실제 채널은 /radios의 wp5g.actualChannel 확인</span>
         <br><br>
         <b style="color:#38bdf8;">Radio - wirelessMode</b><br>
         <code>-2</code> = Auto (권장)
