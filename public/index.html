@@ -405,9 +405,11 @@ const APIS = [
       body: true, bodyDefault: JSON.stringify({ name: "cloned-group", clone: true, clonedWlanId: "" }, null, 2)
     },
     { id:'wlan-update', name:'WLAN Group Update', desc:'WLAN Group 이름 변경', m:'PATCH', p:'/openapi/v1/{oid}/sites/{sid}/wireless-network/wlans/{wlanId}',
+      params:[{k:'wlanId',l:'WLAN Group ID',ph:'from WLAN Group List response'}],
       body: true, bodyDefault: JSON.stringify({ name: "renamed-group" }, null, 2)
     },
-    { id:'wlan-delete', name:'WLAN Group Delete', desc:'WLAN Group 삭제 (내부 SSID 포함 삭제)', m:'DELETE', p:'/openapi/v1/{oid}/sites/{sid}/wireless-network/wlans/{wlanId}', danger: true
+    { id:'wlan-delete', name:'WLAN Group Delete', desc:'WLAN Group 삭제 (내부 SSID 포함 삭제)', m:'DELETE', p:'/openapi/v1/{oid}/sites/{sid}/wireless-network/wlans/{wlanId}',
+      params:[{k:'wlanId',l:'WLAN Group ID',ph:'from WLAN Group List response'}], danger: true
     },
     { id:'ap-override-get', name:'AP WLAN Override (GET)', desc:'AP에 적용된 WLAN/SSID Override 설정 조회. SSID별 이름/비밀번호/밴드/보안/VLAN/활성화 여부 확인', m:'GET', p:'/openapi/v1/{oid}/sites/{sid}/aps/{apMac}/override', useApMac:true },
     { id:'ap-override-set', name:'AP WLAN Override (SET)', desc:'AP별 SSID 이름/비밀번호/활성화 개별 Override. ssidId는 AP Override GET 응답의 ssidId 사용', m:'PATCH', p:'/openapi/v1/{oid}/sites/{sid}/aps/{apMac}/override', useApMac:true,
@@ -425,29 +427,35 @@ const APIS = [
     { id:'wlan-assign', name:'AP에 WLAN Group 지정 (내부API)', desc:'내부 로그인 → WLAN Group 지정을 한번에 실행. wlanId에 지정할 WLAN Group ID 입력.', m:'PATCH', p:'내부API', useApMac:true, danger:true, isInternal:true,
       body: true, bodyDefault: JSON.stringify({ wlanId: "" }, null, 2)
     },
-    { id:'ssids', name:'SSID List', desc:'SSIDs in WLAN group (ssidId, name, band, security, broadcast, vlanEnable)', m:'GET', p:'/openapi/v1/{oid}/sites/{sid}/wireless-network/wlans/{wlanId}/ssids?pageSize=100&page=1' },
+    { id:'ssids', name:'SSID List', desc:'SSIDs in WLAN group (ssidId, name, band, security, broadcast, vlanEnable)', m:'GET', p:'/openapi/v1/{oid}/sites/{sid}/wireless-network/wlans/{wlanId}/ssids?pageSize=100&page=1',
+      params:[{k:'wlanId',l:'WLAN Group ID',ph:'from WLAN Group List response'}]
+    },
     { id:'ssid-detail', name:'SSID Detail', desc:'Full SSID detail (pskSetting, rateLimit, wlanSchedule, macFilter, multiCast, etc)', m:'GET', p:'/openapi/v1/{oid}/sites/{sid}/wireless-network/wlans/{wlanId}/ssids/{ssidId}',
-      params:[{k:'ssidId',l:'SSID ID',ph:'from SSID List response'}]
+      params:[{k:'wlanId',l:'WLAN Group ID',ph:'from WLAN Group List response'},{k:'ssidId',l:'SSID ID',ph:'from SSID List response'}]
     },
     { id:'ssid-create-24g', name:'SSID Create (2.4G)', desc:'2.4GHz only SSID', m:'POST', p:'/openapi/v1/{oid}/sites/{sid}/wireless-network/wlans/{wlanId}/ssids',
+      params:[{k:'wlanId',l:'WLAN Group ID',ph:'from WLAN Group List response'}],
       body: true, bodyDefault: JSON.stringify({
         name: "my-ssid-2.4G", band: 1, security: 3, broadcast: true, mloEnable: false, pmfMode: 2, enable11r: false, hidePwd: true, vlanEnable: false, guestNetEnable: false, deviceType: 1,
         pskSetting: { securityKey: "password12345", versionPsk: 2, encryptionPsk: 1, gikRekeyPskEnable: false }
       }, null, 2)
     },
     { id:'ssid-create-5g', name:'SSID Create (5G)', desc:'5GHz only SSID', m:'POST', p:'/openapi/v1/{oid}/sites/{sid}/wireless-network/wlans/{wlanId}/ssids',
+      params:[{k:'wlanId',l:'WLAN Group ID',ph:'from WLAN Group List response'}],
       body: true, bodyDefault: JSON.stringify({
         name: "my-ssid-5G", band: 2, security: 3, broadcast: true, mloEnable: false, pmfMode: 2, enable11r: false, hidePwd: true, vlanEnable: false, guestNetEnable: false, deviceType: 1,
         pskSetting: { securityKey: "password12345", versionPsk: 2, encryptionPsk: 1, gikRekeyPskEnable: false }
       }, null, 2)
     },
     { id:'ssid-create-dual', name:'SSID Create (2.4+5G)', desc:'Dual band SSID', m:'POST', p:'/openapi/v1/{oid}/sites/{sid}/wireless-network/wlans/{wlanId}/ssids',
+      params:[{k:'wlanId',l:'WLAN Group ID',ph:'from WLAN Group List response'}],
       body: true, bodyDefault: JSON.stringify({
         name: "my-ssid-dual", band: 3, security: 3, broadcast: true, mloEnable: false, pmfMode: 2, enable11r: false, hidePwd: true, vlanEnable: false, guestNetEnable: false, deviceType: 1,
         pskSetting: { securityKey: "password12345", versionPsk: 2, encryptionPsk: 1, gikRekeyPskEnable: false }
       }, null, 2)
     },
     { id:'ssid-create', name:'SSID Create (Custom)', desc:'band(bitmask): 1=2.4G, 2=5G, 3=2.4+5G, 4=6G, 7=all | security: 0=Open, 3=WPA-Personal | versionPsk: 1=WPA, 2=WPA2, 3=WPA/WPA2, 4=WPA3-SAE | encryptionPsk: 1=Auto, 3=AES | pmfMode: 1=Mandatory, 2=Capable, 3=Disable | deviceType: 1=EAP, 3=EAP+Gateway', m:'POST', p:'/openapi/v1/{oid}/sites/{sid}/wireless-network/wlans/{wlanId}/ssids',
+      params:[{k:'wlanId',l:'WLAN Group ID',ph:'from WLAN Group List response'}],
       body: true, bodyDefault: JSON.stringify({
         name: "new-ssid",
         band: 3,
@@ -469,7 +477,7 @@ const APIS = [
       }, null, 2)
     },
     { id:'ssid-update', name:'SSID Update', desc:'Update SSID basic config. All * fields required. pskSetting required when security=3', m:'PATCH', p:'/openapi/v1/{oid}/sites/{sid}/wireless-network/wlans/{wlanId}/ssids/{ssidId}/update-basic-config',
-      params:[{k:'ssidId',l:'SSID ID',ph:'from SSID List response'}],
+      params:[{k:'wlanId',l:'WLAN Group ID',ph:'from WLAN Group List response'},{k:'ssidId',l:'SSID ID',ph:'from SSID List response'}],
       body: true, bodyDefault: JSON.stringify({
         name: "updated-ssid",
         band: 3,
@@ -491,7 +499,7 @@ const APIS = [
       }, null, 2)
     },
     { id:'ssid-delete', name:'SSID Delete', desc:'Delete SSID by ssidId', m:'DELETE', p:'/openapi/v1/{oid}/sites/{sid}/wireless-network/wlans/{wlanId}/ssids/{ssidId}',
-      params:[{k:'ssidId',l:'SSID ID',ph:'from SSID List response'}], danger:true
+      params:[{k:'wlanId',l:'WLAN Group ID',ph:'from WLAN Group List response'},{k:'ssidId',l:'SSID ID',ph:'from SSID List response'}], danger:true
     },
     { id:'ssid-override', name:'AP SSID Override', desc:'Override SSID settings per AP (from device detail: ssidOverrides)', m:'GET', p:'/openapi/v1/{oid}/sites/{sid}/aps/{apMac}', useApMac:true },
   ]},
@@ -528,11 +536,12 @@ const APIS = [
 // ── Resolve path ──
 function resolvePath(p, overrides = {}) {
   const apMac = overrides.apMac || val('apMac');
+  const wlanId = overrides.wlanId || val('wlanId');
   return p
     .replace('{oid}', val('omadacId'))
     .replace('{sid}', val('siteId'))
     .replace('{apMac}', apMac)
-    .replace('{wlanId}', val('wlanId'))
+    .replace('{wlanId}', wlanId)
     .replace(/\{(\w+)\}/g, (_, k) => overrides[k] || `{${k}}`);
 }
 
