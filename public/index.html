@@ -397,7 +397,7 @@ const APIS = [
     },
   ]},
   { tab: 'SSID', title: 'SSID / WLAN Group / AP Override', items: [
-    { id:'wlans', name:'WLAN Group List', desc:'WLAN groups (wlanId, name, primary). SSID는 WLAN Group 안에 생성하고, WLAN Group을 AP에 적용하는 구조', m:'GET', p:'/openapi/v1/{oid}/sites/{sid}/wireless-network/wlans' },
+    { id:'wlans', name:'WLAN Group List', desc:'WLAN groups (wlanId, name, primary). pageSize/page로 페이징 조회. SSID는 WLAN Group 안에 생성하고, WLAN Group을 AP에 적용하는 구조', m:'GET', p:'/openapi/v1/{oid}/sites/{sid}/wireless-network/wlans?pageSize=50&page=1' },
     { id:'wlan-create', name:'WLAN Group Create (Empty)', desc:'새 빈 WLAN Group 생성. clone=false', m:'POST', p:'/openapi/v1/{oid}/sites/{sid}/wireless-network/wlans',
       body: true, bodyDefault: JSON.stringify({ name: "my-wlan-group", clone: false }, null, 2)
     },
