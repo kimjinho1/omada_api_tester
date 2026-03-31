@@ -111,6 +111,44 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // Generic Internal API v2 proxy (login + any action)
+  if (req.method === 'POST' && req.url === '/proxy-internal-v2') {
+    let body = '';
+    req.on('data', (chunk) => (body += chunk));
+    req.on('end', async () => {
+      try {
+        const { baseUrl, omadacId, siteId, username, password, action } = JSON.parse(body);
+        // action: { method, path, body }  (path is relative to /api/v2/sites/{siteId}/)
+
+        // Step 1: Internal login
+        const loginResult = await proxyRequest(
+          `${baseUrl}/${omadacId}/api/v2/login`, 'POST',
+          { 'Content-Type': 'application/json' },
+          JSON.stringify({ username, password })
+        );
+        const loginData = JSON.parse(loginResult.body);
+        if (loginData.errorCode !== 0) throw new Error(loginData.msg);
+        const token = loginData.result.token;
+
+        // Step 2: Execute action
+        const actionUrl = `${baseUrl}/${omadacId}/api/v2/sites/${siteId}/${action.path}?token=${token}`;
+        const actionResult = await proxyRequestWithCookie(
+          actionUrl, action.method || 'GET',
+          { 'Content-Type': 'application/json', 'Csrf-Token': token },
+          action.body ? JSON.stringify(action.body) : null,
+          loginResult.cookies
+        );
+
+        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*' });
+        res.end(JSON.stringify({ status: actionResult.status, body: actionResult.body }));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: err.message }));
+      }
+    });
+    return;
+  }
+
   res.writeHead(404);
   res.end('Not Found');
 });
