@@ -138,6 +138,7 @@
     <button class="btn btn-primary" id="btnViewApi" onclick="switchView('api')" style="font-size:13px;">API Tester</button>
     <button class="btn btn-secondary" id="btnViewFunc" onclick="switchView('func')" style="font-size:13px;">Feature Checklist</button>
     <button class="btn btn-secondary" id="btnViewWireless" onclick="switchView('wireless')" style="font-size:13px;">Wireless Setup</button>
+    <button class="btn btn-secondary" id="btnViewEnv" onclick="switchView('env')" style="font-size:13px;">Env Setup</button>
   </div>
 
   <!-- Wireless Setup View -->
@@ -275,6 +276,140 @@
     </div>
   </div>
 
+  <!-- Env Setup View -->
+  <div id="envView" style="display:none;">
+    <div class="config" style="padding:20px; margin-bottom:12px;">
+      <h2 style="margin-bottom:12px; color:#38bdf8;">Environment Setup</h2>
+      <p style="font-size:13px; color:#94a3b8; margin-bottom:16px;">필수 정보만 입력하면 순차적으로 환경변수(omadacId, siteId, apMac, wlanId)를 자동 조회합니다.</p>
+
+      <!-- 필수 입력 -->
+      <div style="background:#0f172a; border-radius:8px; padding:16px; margin-bottom:16px; border:1px solid #334155;">
+        <h3 style="font-size:14px; color:#f59e0b; margin-bottom:12px;">필수 입력</h3>
+        <div class="config-grid g3">
+          <div class="field"><label>Controller URL</label><input id="env-baseUrl" value="https://192.168.1.55:8043" /></div>
+          <div class="field"><label>Username</label><input id="env-username" value="admin" /></div>
+          <div class="field"><label>Password</label><input id="env-password" type="password" value="1q2w3e!Q@W#E" /></div>
+        </div>
+        <div class="config-grid g3" style="margin-top:8px;">
+          <div class="field"><label>Client ID</label><input id="env-clientId" value="8071fd8b2d804b92abb429cc87c17e5e" /></div>
+          <div class="field"><label>Client Secret</label><input id="env-clientSecret" value="dc9f0f6ac32d4768b536d0c923760a2d" /></div>
+          <div class="field" style="display:flex;align-items:flex-end;">
+            <button class="btn btn-primary" onclick="envRunAll()" style="width:100%;">전체 순차 실행</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 1: Controller Info → omadacId -->
+      <div class="env-step" style="background:#1e293b; border:1px solid #334155; border-radius:8px; padding:16px; margin-bottom:10px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span style="background:#0ea5e9; color:white; font-size:12px; font-weight:700; padding:3px 10px; border-radius:12px;">Step 1</span>
+            <span style="font-size:14px; font-weight:600;">Controller Info → omadacId</span>
+            <span class="method-badge GET" style="font-size:11px; padding:2px 8px;">GET</span>
+          </div>
+          <button class="run-btn" onclick="envStep1()">Run</button>
+        </div>
+        <div style="font-size:12px; color:#94a3b8; margin-bottom:8px; font-family:Consolas,monospace;">GET /api/info</div>
+        <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
+          <label style="font-size:12px; color:#94a3b8; font-weight:600;">RESULT → omadacId:</label>
+          <input id="env-omadacId" style="flex:1;background:#0f172a;border:1px solid #334155;border-radius:5px;padding:6px 10px;color:#34d399;font-size:13px;font-family:Consolas,monospace;" placeholder="자동 입력됨" />
+        </div>
+        <div class="api-result" id="env-result-1" style="display:none; max-height:200px; font-size:12px;"></div>
+      </div>
+
+      <!-- Step 2: Login + Code + Token → Access Token -->
+      <div class="env-step" style="background:#1e293b; border:1px solid #334155; border-radius:8px; padding:16px; margin-bottom:10px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span style="background:#0ea5e9; color:white; font-size:12px; font-weight:700; padding:3px 10px; border-radius:12px;">Step 2</span>
+            <span style="font-size:14px; font-weight:600;">Login → Access Token</span>
+            <span class="method-badge POST" style="font-size:11px; padding:2px 8px;">POST</span>
+          </div>
+          <button class="run-btn" onclick="envStep2()">Run</button>
+        </div>
+        <div style="font-size:12px; color:#94a3b8; margin-bottom:8px; font-family:Consolas,monospace;">POST /openapi/authorize/login → /authorize/code → /authorize/token</div>
+        <div style="display:flex; gap:8px; align-items:center; margin-bottom:6px;">
+          <label style="font-size:12px; color:#94a3b8; font-weight:600; min-width:120px;">RESULT → accessToken:</label>
+          <input id="env-accessToken" style="flex:1;background:#0f172a;border:1px solid #334155;border-radius:5px;padding:6px 10px;color:#34d399;font-size:13px;font-family:Consolas,monospace;" placeholder="자동 입력됨" readonly />
+        </div>
+        <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
+          <label style="font-size:12px; color:#94a3b8; font-weight:600; min-width:120px;">RESULT → refreshToken:</label>
+          <input id="env-refreshToken" style="flex:1;background:#0f172a;border:1px solid #334155;border-radius:5px;padding:6px 10px;color:#34d399;font-size:13px;font-family:Consolas,monospace;" placeholder="자동 입력됨" readonly />
+        </div>
+        <div class="api-result" id="env-result-2" style="display:none; max-height:200px; font-size:12px;"></div>
+      </div>
+
+      <!-- Step 3: Sites → siteId -->
+      <div class="env-step" style="background:#1e293b; border:1px solid #334155; border-radius:8px; padding:16px; margin-bottom:10px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span style="background:#0ea5e9; color:white; font-size:12px; font-weight:700; padding:3px 10px; border-radius:12px;">Step 3</span>
+            <span style="font-size:14px; font-weight:600;">Site List → siteId</span>
+            <span class="method-badge GET" style="font-size:11px; padding:2px 8px;">GET</span>
+          </div>
+          <button class="run-btn" onclick="envStep3()">Run</button>
+        </div>
+        <div style="font-size:12px; color:#94a3b8; margin-bottom:8px; font-family:Consolas,monospace;">GET /openapi/v1/{omadacId}/sites</div>
+        <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
+          <label style="font-size:12px; color:#94a3b8; font-weight:600;">RESULT → siteId:</label>
+          <select id="env-siteId" style="flex:1;background:#0f172a;border:1px solid #334155;border-radius:5px;padding:6px 10px;color:#34d399;font-size:13px;font-family:Consolas,monospace;">
+            <option value="">Step 3 실행 후 선택</option>
+          </select>
+        </div>
+        <div class="api-result" id="env-result-3" style="display:none; max-height:200px; font-size:12px;"></div>
+      </div>
+
+      <!-- Step 4: Devices → apMac -->
+      <div class="env-step" style="background:#1e293b; border:1px solid #334155; border-radius:8px; padding:16px; margin-bottom:10px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span style="background:#0ea5e9; color:white; font-size:12px; font-weight:700; padding:3px 10px; border-radius:12px;">Step 4</span>
+            <span style="font-size:14px; font-weight:600;">Device List → AP MAC</span>
+            <span class="method-badge GET" style="font-size:11px; padding:2px 8px;">GET</span>
+          </div>
+          <button class="run-btn" onclick="envStep4()">Run</button>
+        </div>
+        <div style="font-size:12px; color:#94a3b8; margin-bottom:8px; font-family:Consolas,monospace;">GET /openapi/v1/{omadacId}/sites/{siteId}/devices</div>
+        <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
+          <label style="font-size:12px; color:#94a3b8; font-weight:600;">RESULT → AP MAC:</label>
+          <select id="env-apMac" style="flex:1;background:#0f172a;border:1px solid #334155;border-radius:5px;padding:6px 10px;color:#34d399;font-size:13px;font-family:Consolas,monospace;">
+            <option value="">Step 4 실행 후 선택</option>
+          </select>
+        </div>
+        <div class="api-result" id="env-result-4" style="display:none; max-height:200px; font-size:12px;"></div>
+      </div>
+
+      <!-- Step 5: AP Detail → wlanId -->
+      <div class="env-step" style="background:#1e293b; border:1px solid #334155; border-radius:8px; padding:16px; margin-bottom:10px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span style="background:#0ea5e9; color:white; font-size:12px; font-weight:700; padding:3px 10px; border-radius:12px;">Step 5</span>
+            <span style="font-size:14px; font-weight:600;">AP Detail → wlanId</span>
+            <span class="method-badge GET" style="font-size:11px; padding:2px 8px;">GET</span>
+          </div>
+          <button class="run-btn" onclick="envStep5()">Run</button>
+        </div>
+        <div style="font-size:12px; color:#94a3b8; margin-bottom:8px; font-family:Consolas,monospace;">GET /openapi/v1/{omadacId}/sites/{siteId}/aps/{apMac}</div>
+        <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
+          <label style="font-size:12px; color:#94a3b8; font-weight:600;">RESULT → wlanId:</label>
+          <input id="env-wlanId" style="flex:1;background:#0f172a;border:1px solid #334155;border-radius:5px;padding:6px 10px;color:#34d399;font-size:13px;font-family:Consolas,monospace;" placeholder="자동 입력됨" readonly />
+        </div>
+        <div class="api-result" id="env-result-5" style="display:none; max-height:200px; font-size:12px;"></div>
+      </div>
+
+      <!-- Summary & Apply -->
+      <div style="background:#064e3b; border:1px solid #34d399; border-radius:8px; padding:16px; margin-top:16px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+          <h3 style="font-size:14px; color:#34d399; margin:0;">조회된 환경변수 요약</h3>
+          <button class="btn btn-primary" onclick="envApplyToMain()" style="font-size:13px;">메인 Config에 적용</button>
+        </div>
+        <div id="env-summary" style="font-family:Consolas,monospace; font-size:13px; color:#e2e8f0; line-height:2;">
+          <span style="color:#94a3b8;">전체 순차 실행 또는 개별 Step 실행 후 결과가 표시됩니다.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Feature Checklist View -->
   <div id="funcView" style="display:none;">
     <div class="config" style="padding:16px; margin-bottom:12px;">
@@ -356,6 +491,16 @@
         <code>4</code> = WPA3-SAE <span style="color:#fde68a;">(AES+PMF필수)</span>
         <br><br>
         <b style="color:#38bdf8;">pskSetting - encryptionPsk</b><br>
+        <code>1</code> = Auto (TKIP+AES)<br>
+        <code>3</code> = AES only <span style="color:#fde68a;">(WPA3 필수)</span>
+        <br><br>
+        <b style="color:#e879f9;">radiusSetting - versionEap</b> <span style="color:#94a3b8;">(security=2)</span><br>
+        <code>1</code> = WPA<br>
+        <code>2</code> = WPA2 (권장)<br>
+        <code>3</code> = WPA/WPA2 (호환)<br>
+        <code>4</code> = WPA3 <span style="color:#fde68a;">(AES+PMF필수)</span>
+        <br><br>
+        <b style="color:#e879f9;">radiusSetting - encryptionEap</b> <span style="color:#94a3b8;">(security=2)</span><br>
         <code>1</code> = Auto (TKIP+AES)<br>
         <code>3</code> = AES only <span style="color:#fde68a;">(WPA3 필수)</span>
       </div>
@@ -625,7 +770,7 @@ const APIS = [
         pskSetting: { securityKey: "password12345", versionPsk: 2, encryptionPsk: 1, gikRekeyPskEnable: false }
       }, null, 2)
     },
-    { id:'ssid-create', name:'SSID Create (Custom)', desc:'band(bitmask): 1=2.4G, 2=5G, 3=2.4+5G, 4=6G, 7=all | security: 0=Open, 3=WPA-Personal | versionPsk: 1=WPA, 2=WPA2, 3=WPA/WPA2, 4=WPA3-SAE | encryptionPsk: 1=Auto, 3=AES | pmfMode: 1=Mandatory, 2=Capable, 3=Disable | deviceType: 1=EAP, 3=EAP+Gateway', m:'POST', p:'/openapi/v1/{oid}/sites/{sid}/wireless-network/wlans/{wlanId}/ssids',
+    { id:'ssid-create', name:'SSID Create (Custom)', desc:'band(bitmask): 1=2.4G, 2=5G, 3=2.4+5G, 4=6G, 7=all | security: 0=Open, 2=WPA-Enterprise, 3=WPA-Personal | versionPsk: 1=WPA, 2=WPA2, 3=WPA/WPA2, 4=WPA3-SAE | encryptionPsk: 1=Auto, 3=AES | pmfMode: 1=Mandatory, 2=Capable, 3=Disable | deviceType: 1=EAP, 3=EAP+Gateway', m:'POST', p:'/openapi/v1/{oid}/sites/{sid}/wireless-network/wlans/{wlanId}/ssids',
       params:[{k:'wlanId',l:'WLAN Group ID',ph:'from WLAN Group List response'}],
       body: true, bodyDefault: JSON.stringify({
         name: "new-ssid",
@@ -647,7 +792,30 @@ const APIS = [
         }
       }, null, 2)
     },
-    { id:'ssid-update', name:'SSID Update', desc:'Update SSID basic config. All * fields required. pskSetting required when security=3', m:'PATCH', p:'/openapi/v1/{oid}/sites/{sid}/wireless-network/wlans/{wlanId}/ssids/{ssidId}/update-basic-config',
+    { id:'ssid-create-enterprise', name:'SSID Create (Enterprise)', desc:'security=2 WPA-Enterprise | versionEap: 1=WPA, 2=WPA2, 3=WPA/WPA2, 4=WPA3 | encryptionEap: 1=Auto, 3=AES | RADIUS 서버 설정 필요', m:'POST', p:'/openapi/v1/{oid}/sites/{sid}/wireless-network/wlans/{wlanId}/ssids',
+      params:[{k:'wlanId',l:'WLAN Group ID',ph:'from WLAN Group List response'}],
+      body: true, bodyDefault: JSON.stringify({
+        name: "enterprise-ssid",
+        band: 3,
+        security: 2,
+        broadcast: true,
+        mloEnable: false,
+        pmfMode: 2,
+        enable11r: false,
+        hidePwd: true,
+        vlanEnable: false,
+        guestNetEnable: false,
+        deviceType: 1,
+        radiusSetting: {
+          versionEap: 2,
+          encryptionEap: 1,
+          radiusServerIp: "192.168.1.100",
+          radiusServerPort: 1812,
+          radiusServerSecret: "radiussecret"
+        }
+      }, null, 2)
+    },
+    { id:'ssid-update', name:'SSID Update', desc:'Update SSID basic config. All * fields required. pskSetting required when security=3, radiusSetting required when security=2', m:'PATCH', p:'/openapi/v1/{oid}/sites/{sid}/wireless-network/wlans/{wlanId}/ssids/{ssidId}/update-basic-config',
       params:[{k:'wlanId',l:'WLAN Group ID',ph:'from WLAN Group List response'},{k:'ssidId',l:'SSID ID',ph:'from SSID List response'}],
       body: true, bodyDefault: JSON.stringify({
         name: "updated-ssid",
@@ -938,7 +1106,7 @@ const FEATURES_BY_API = [
   { type:'관제', cat:'네트워크', api:`GET ${P}/aps/{apMac}/radio-config`, g:`${P}/aps/{apMac}/radio-config`,
     items:['radioEnable (2g/5g/6g)','channelWidth','channel','txPower','wirelessMode'] },
   { type:'관제', cat:'SSID', api:`GET ${P}/wireless-network/wlans/{wlanId}/ssids?pageSize=100&page=1`, g:`${P}/wireless-network/wlans/{wlanId}/ssids?pageSize=100&page=1`,
-    items:['SSID 목록 (name, band, security, broadcast)','인증 방식 (security: 0=Open, 3=WPA-Personal)','암호화 방식 (pskSetting.encryptionPsk)','band별 필터 (1=2.4G, 2=5G, 3=dual, 4=6G)'] },
+    items:['SSID 목록 (name, band, security, broadcast)','인증 방식 (security: 0=Open, 2=Enterprise, 3=WPA-Personal)','암호화 방식 (pskSetting/radiusSetting)','band별 필터 (1=2.4G, 2=5G, 3=dual, 4=6G)'] },
   { type:'관제', cat:'SSID', api:`GET ${P}/wireless-network/wlans`, g:`${P}/wireless-network/wlans`,
     items:['WLAN Group 목록 (wlanId, name, primary)'] },
   { type:'관제', cat:'무선', api:`GET /openapi/v2/{oid}/sites/{sid}/aps/{apMac}/rf-scan-result`, g:'/openapi/v2/{oid}/sites/{sid}/aps/{apMac}/rf-scan-result',
@@ -997,7 +1165,7 @@ const FEATURES_BY_API = [
     sm:'PATCH', sp:`${P}/wireless-network/wlans/{wlanId}/ssids/{ssidId}/update-basic-config`, needParam:'ssidId',
     vf:`${P}/wireless-network/wlans/{wlanId}/ssids?pageSize=100&page=1`,
     sb:{name:"my-ssid",band:3,security:3,broadcast:true,mloEnable:false,pmfMode:2,enable11r:false,hidePwd:true,vlanEnable:false,guestNetEnable:false,greEnable:false,pskSetting:{securityKey:"password12345",versionPsk:2,encryptionPsk:1,gikRekeyPskEnable:false}},
-    items:['SSID 명 변경','인증 방식 (security: 0/3)','암호화 방식 (encryptionPsk: 1/3)','비밀번호 (securityKey)','숨김 설정 (broadcast: true/false)','band 변경 (1/2/3/4/7)'] },
+    items:['SSID 명 변경','인증 방식 (security: 0/2/3)','PSK 암호화 (encryptionPsk: 1/3)','Enterprise 암호화 (encryptionEap: 1/3)','비밀번호 (securityKey)','숨김 설정 (broadcast: true/false)','band 변경 (1/2/3/4/7)'] },
   { type:'설정', cat:'SSID', api:`POST ${P}/acls/eap-acls`,
     sm:'POST', sp:`${P}/acls/eap-acls`, sb:{},
     items:['단말간 통신 단절 (ACL)'] },
@@ -1013,11 +1181,14 @@ function switchView(v) {
   el('apiView').style.display = v === 'api' ? 'block' : 'none';
   el('funcView').style.display = v === 'func' ? 'block' : 'none';
   el('wirelessView').style.display = v === 'wireless' ? 'block' : 'none';
+  el('envView').style.display = v === 'env' ? 'block' : 'none';
   el('btnViewApi').className = `btn ${v==='api'?'btn-primary':'btn-secondary'}`;
   el('btnViewFunc').className = `btn ${v==='func'?'btn-primary':'btn-secondary'}`;
   el('btnViewWireless').className = `btn ${v==='wireless'?'btn-primary':'btn-secondary'}`;
+  el('btnViewEnv').className = `btn ${v==='env'?'btn-primary':'btn-secondary'}`;
   if (v === 'func') renderFunc();
   if (v === 'wireless') wsInit();
+  if (v === 'env') envSyncFromMain();
 }
 
 const featSetDone = new Set();
@@ -1351,6 +1522,239 @@ async function wsVerifyWlan() {
     const wlanId = (r.result || r).wlanId;
     wsShowResult('ws-assign-result', { currentWlanId: wlanId, fullResponse: r.result || r }, '<b style="color:#34d399">[VERIFY] </b>');
   } catch (e) { wsShowError('ws-assign-result', e.message); }
+}
+
+// ── Env Setup ──
+function envVal(id) { return el(id).value.trim(); }
+
+function envSyncFromMain() {
+  // Sync values from main config to env fields
+  if (val('baseUrl')) el('env-baseUrl').value = val('baseUrl');
+  if (val('username')) el('env-username').value = val('username');
+  if (val('password')) el('env-password').value = val('password');
+  if (val('clientId')) el('env-clientId').value = val('clientId');
+  if (val('clientSecret')) el('env-clientSecret').value = val('clientSecret');
+  if (val('omadacId')) el('env-omadacId').value = val('omadacId');
+}
+
+function envShowResult(stepNum, data) {
+  const r = el(`env-result-${stepNum}`);
+  r.style.display = 'block';
+  r.classList.remove('error');
+  r.innerHTML = highlight(JSON.stringify(data, null, 2));
+}
+
+function envShowError(stepNum, msg) {
+  const r = el(`env-result-${stepNum}`);
+  r.style.display = 'block';
+  r.classList.add('error');
+  r.textContent = 'Error: ' + msg;
+}
+
+function envUpdateSummary() {
+  const fields = [
+    { label: 'Controller URL', val: envVal('env-baseUrl') },
+    { label: 'omadacId', val: envVal('env-omadacId') },
+    { label: 'accessToken', val: envVal('env-accessToken') },
+    { label: 'refreshToken', val: envVal('env-refreshToken') },
+    { label: 'siteId', val: el('env-siteId').value },
+    { label: 'apMac', val: el('env-apMac').value },
+    { label: 'wlanId', val: envVal('env-wlanId') },
+  ];
+  let html = '';
+  fields.forEach(f => {
+    const color = f.val ? '#34d399' : '#64748b';
+    const icon = f.val ? '&#10003;' : '&#8212;';
+    html += `<div><span style="color:${color};margin-right:8px;">${icon}</span><span style="color:#94a3b8;min-width:130px;display:inline-block;">${f.label}:</span> <span style="color:${color};">${f.val || '(미조회)'}</span></div>`;
+  });
+  el('env-summary').innerHTML = html;
+}
+
+// Step 1: GET /api/info → omadacId
+async function envStep1() {
+  const base = envVal('env-baseUrl');
+  try {
+    const resp = await proxy(`${base}/api/info`, 'GET', {}, null);
+    const oid = resp.result?.omadacId || resp.result?.omadaControllerId;
+    if (oid) {
+      el('env-omadacId').value = oid;
+    }
+    envShowResult(1, resp);
+    envUpdateSummary();
+    return true;
+  } catch (e) {
+    envShowError(1, e.message);
+    return false;
+  }
+}
+
+// Step 2: Login → Code → Token
+async function envStep2() {
+  const base = envVal('env-baseUrl');
+  const cid = envVal('env-clientId');
+  const cs = envVal('env-clientSecret');
+  const oid = envVal('env-omadacId');
+  if (!oid) { envShowError(2, 'omadacId가 필요합니다. Step 1을 먼저 실행하거나 직접 입력하세요.'); return false; }
+  try {
+    // Login
+    const login = await proxy(`${base}/openapi/authorize/login?client_id=${cid}&omadac_id=${oid}`, 'POST', {}, { username: envVal('env-username'), password: envVal('env-password') });
+    if (login.errorCode !== 0) throw new Error(login.msg);
+    const { csrfToken, sessionId } = login.result;
+
+    // Code
+    const codeR = await proxy(`${base}/openapi/authorize/code?client_id=${cid}&omadac_id=${oid}&response_type=code`, 'POST', { 'Csrf-Token': csrfToken, 'Cookie': `TPOMADA_SESSIONID=${sessionId}` }, null);
+    if (codeR.errorCode !== 0) throw new Error(codeR.msg);
+
+    // Token
+    const tokR = await proxy(`${base}/openapi/authorize/token?grant_type=authorization_code&code=${codeR.result}&client_id=${cid}&client_secret=${cs}&omadac_id=${oid}`, 'POST', {}, null);
+    if (tokR.errorCode !== 0) throw new Error(tokR.msg);
+
+    el('env-accessToken').value = tokR.result.accessToken;
+    el('env-refreshToken').value = tokR.result.refreshToken;
+
+    // Also update global state so other tabs can use it
+    S.accessToken = tokR.result.accessToken;
+    S.refreshToken = tokR.result.refreshToken;
+
+    envShowResult(2, { login: 'OK', code: 'OK', token: tokR.result });
+    envUpdateSummary();
+    return true;
+  } catch (e) {
+    envShowError(2, e.message);
+    return false;
+  }
+}
+
+function envAuthHeader() { return { 'Authorization': `AccessToken=${envVal('env-accessToken')}` }; }
+
+// Step 3: Sites → siteId
+async function envStep3() {
+  const base = envVal('env-baseUrl');
+  const oid = envVal('env-omadacId');
+  const token = envVal('env-accessToken');
+  if (!token) { envShowError(3, 'Access Token이 필요합니다. Step 2를 먼저 실행하세요.'); return false; }
+  try {
+    const resp = await proxy(`${base}/openapi/v1/${oid}/sites?pageSize=100&page=1`, 'GET', envAuthHeader());
+    if (resp.errorCode !== 0) throw new Error(resp.msg);
+    const sites = resp.result.data || [];
+    const sel = el('env-siteId');
+    sel.innerHTML = '';
+    sites.forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s.siteId;
+      opt.textContent = `${s.name} — ${s.siteId}`;
+      sel.appendChild(opt);
+    });
+    envShowResult(3, resp);
+    envUpdateSummary();
+    return true;
+  } catch (e) {
+    envShowError(3, e.message);
+    return false;
+  }
+}
+
+// Step 4: Devices → AP list
+async function envStep4() {
+  const base = envVal('env-baseUrl');
+  const oid = envVal('env-omadacId');
+  const sid = el('env-siteId').value;
+  if (!sid) { envShowError(4, 'siteId가 필요합니다. Step 3를 먼저 실행하세요.'); return false; }
+  try {
+    const resp = await proxy(`${base}/openapi/v1/${oid}/sites/${sid}/devices?pageSize=100&page=1`, 'GET', envAuthHeader());
+    if (resp.errorCode !== 0) throw new Error(resp.msg);
+    const devices = resp.result.data || [];
+    const aps = devices.filter(d => d.type === 'ap');
+    const sel = el('env-apMac');
+    sel.innerHTML = '';
+    aps.forEach(ap => {
+      const opt = document.createElement('option');
+      opt.value = ap.mac;
+      opt.textContent = `${ap.mac} (${ap.model} / ${ap.ip} / ${ap.status === 1 ? 'Connected' : 'Disconnected'})`;
+      sel.appendChild(opt);
+    });
+    // Select first connected AP
+    const connAp = aps.find(a => a.status === 1);
+    if (connAp) sel.value = connAp.mac;
+    envShowResult(4, resp);
+    envUpdateSummary();
+    return true;
+  } catch (e) {
+    envShowError(4, e.message);
+    return false;
+  }
+}
+
+// Step 5: AP Detail → wlanId
+async function envStep5() {
+  const base = envVal('env-baseUrl');
+  const oid = envVal('env-omadacId');
+  const sid = el('env-siteId').value;
+  const apMac = el('env-apMac').value;
+  if (!apMac) { envShowError(5, 'AP MAC이 필요합니다. Step 4를 먼저 실행하세요.'); return false; }
+  try {
+    const resp = await proxy(`${base}/openapi/v1/${oid}/sites/${sid}/aps/${apMac}`, 'GET', envAuthHeader());
+    if (resp.errorCode !== 0) throw new Error(resp.msg);
+    const wlanId = (resp.result || resp).wlanId;
+    if (wlanId) el('env-wlanId').value = wlanId;
+    envShowResult(5, resp);
+    envUpdateSummary();
+    return true;
+  } catch (e) {
+    envShowError(5, e.message);
+    return false;
+  }
+}
+
+// Run all steps sequentially
+async function envRunAll() {
+  const ok1 = await envStep1();
+  if (!ok1 && !envVal('env-omadacId')) return;
+  const ok2 = await envStep2();
+  if (!ok2) return;
+  const ok3 = await envStep3();
+  if (!ok3) return;
+  const ok4 = await envStep4();
+  if (!ok4) return;
+  await envStep5();
+}
+
+// Apply env values to main config
+function envApplyToMain() {
+  if (envVal('env-baseUrl')) el('baseUrl').value = envVal('env-baseUrl');
+  if (envVal('env-username')) el('username').value = envVal('env-username');
+  if (envVal('env-password')) el('password').value = envVal('env-password');
+  if (envVal('env-clientId')) el('clientId').value = envVal('env-clientId');
+  if (envVal('env-clientSecret')) el('clientSecret').value = envVal('env-clientSecret');
+  if (envVal('env-omadacId')) el('omadacId').value = envVal('env-omadacId');
+  if (el('env-siteId').value) {
+    el('siteId').value = el('env-siteId').value;
+    const selOpt = el('env-siteId').selectedOptions[0];
+    if (selOpt) el('siteName').value = selOpt.textContent.split(' — ')[0];
+  }
+  if (el('env-apMac').value) {
+    // Sync AP MAC to main dropdown
+    const mainSel = el('apMac');
+    const envSel = el('env-apMac');
+    mainSel.innerHTML = envSel.innerHTML;
+    mainSel.value = envSel.value;
+  }
+  if (envVal('env-wlanId')) el('wlanId').value = envVal('env-wlanId');
+
+  // Update global state
+  if (envVal('env-accessToken')) {
+    S.accessToken = envVal('env-accessToken');
+    S.refreshToken = envVal('env-refreshToken');
+    el('connStatus').className = 'status connected';
+    el('connStatus').textContent = 'Connected';
+    el('btnRefresh').disabled = false;
+    el('btnRunAll').disabled = false;
+    el('tokenInfo').innerHTML = `AT: <span>${S.accessToken}</span> | RT: <span>${S.refreshToken}</span>`;
+    el('btnConnect').textContent = 'Reconnect';
+  }
+
+  syncApSelects();
+  alert('메인 Config에 적용 완료!');
 }
 </script>
 </body>
